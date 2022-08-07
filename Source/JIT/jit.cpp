@@ -591,6 +591,9 @@ void *clang_JitIrCompile(void *ctx, const char *source, int type, error_handler_
         ss << " -fcxx-exceptions";
     }
     ss << " -fms-extensions";
+    
+    ss << " -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk";
+    
     std::istream_iterator<std::string> begin(ss);
     std::istream_iterator<std::string> end;
     std::istream_iterator<std::string> i = begin;
@@ -614,6 +617,11 @@ void *clang_JitIrCompile(void *ctx, const char *source, int type, error_handler_
     auto& targetOptions = compilerInvocation.getTargetOpts();
     targetOptions.Triple = jitContext->triple;
     auto& headerSearchOptions = compilerInvocation.getHeaderSearchOpts();
+    
+#if defined(__APPLE__)
+    
+    headerSearchOptions.AddPath("/Users/timschoen/Downloads/llvm/include/c++/v1", clang::frontend::IncludeDirGroup::System, false, false);
+#endif
     auto& frontEndOptions = compilerInvocation.getFrontendOpts();
     frontEndOptions.Inputs.clear();
     if (jitContext->options[ClangJitOption_DegugMode]) {
