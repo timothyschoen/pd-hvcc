@@ -17,3 +17,5 @@ cmake --build .
 
 ```
 Replace PATH_TO_HVCC to the hvcc executable.
+
+After running, the pd external should be in the ./binaries folder.
