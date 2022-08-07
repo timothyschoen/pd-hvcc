@@ -23,11 +23,11 @@ struct Compiler : public Thread
     const File hvccPath = library.getChildFile("hvcc").getChildFile("hvcc").getChildFile("__init__.py");
 
     #if JUCE_LINUX
-    const String compileFlags = "-DHAVE_STRUCT_TIMESPEC -O3 -ffast-math -funroll-loops -fomit-frame-pointer";
+    const String compileFlags = "-std=c++17 -fPIC -Ishared -DHAVE_STRUCT_TIMESPEC -O3 -ffast-math -funroll-loops -fomit-frame-pointer";
     const String dllExtension = "so";
-    const String linkerFlags = "-undefined suppress -flat_namespace -bundle";
+    const String linkerFlags = "-rdynamic -shared -fPIC -Wl,-rpath,\"\\$ORIGIN\",--enable-new-dtags -lc -lm ";
     #elif JUCE_MAC
-    const String compileFlags = "-std=c++17 -DPD -DUNIX -DMACOSX -I /sw/include   -Ishared -DHAVE_STRUCT_TIMESPEC -O3 -ffast-math -funroll-loops -fomit-frame-pointer -arch arm64 -mmacosx-version-min=10.12";
+    const String compileFlags = "-std=c++17 -DPD -DUNIX -DMACOSX -I /sw/include -Ishared -DHAVE_STRUCT_TIMESPEC -O3 -ffast-math -funroll-loops -fomit-frame-pointer -arch arm64 -mmacosx-version-min=10.12";
     const String linkerFlags = "-undefined suppress -flat_namespace -bundle  -arch arm64 -mmacosx-version-min=10.12";
     const String dllExtension = "dylib";
     #elif JUCE_WINDOWS

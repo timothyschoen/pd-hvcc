@@ -60,6 +60,10 @@ string(REPLACE " " ";" __LIST ${LIBCLANG_CXXFLAGS})
 target_compile_options(hvcc_gui PRIVATE ${__LIST})
 endif()
 
+if(UNIX AND NOT APPLE)
+target_link_libraries (hvcc_gui PRIVATE curl)
+endif()
+
 target_link_libraries (hvcc_gui PRIVATE juce::juce_core juce::juce_gui_basics juce::juce_graphics ${CLANG_LIBS})
 
 file(GLOB hvcc_gui_sources
