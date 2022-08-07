@@ -38,8 +38,6 @@ const char* hvcc_path = "/opt/homebrew/bin/hvcc";
 const char* hvcc_path = HVCC_PATH;
 #endif
 
-
-
 typedef HeavyContextInterface* (*t_create)(double);
 
 static t_class *hvcc_class;
@@ -231,7 +229,7 @@ static t_int *hvcc_perform(t_int *w) {
     
 }
 
-static t_int *hvcc_dsp(t_hvcc *x, t_signal **sp) {
+static void hvcc_dsp(t_hvcc *x, t_signal **sp) {
     
     if(!x->hv_object) return;
     
