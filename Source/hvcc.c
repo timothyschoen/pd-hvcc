@@ -11,7 +11,7 @@
 #else
 #error dlopen not supported!
 #endif
-#include "hvcc/HvHeavy.h"
+#include "HvHeavy.h"
 
 extern void create_gui(const char* content, void* cnv);
 extern void run_loop_until(int ms);

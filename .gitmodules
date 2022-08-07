@@ -7,3 +7,15 @@
 [submodule "GUI/JUCE"]
 	path = GUI/JUCE
 	url = https://github.com/juce-framework/JUCE.git
+[submodule "Libraries/JUCE"]
+	path = Libraries/JUCE
+	url = https://github.com/juce-framework/JUCE.git
+[submodule "Libraries/pure-data"]
+	path = Libraries/pure-data
+	url = https://github.com/pure-data/pure-data.git
+[submodule "Libraries/hvcc"]
+	path = Libraries/hvcc
+	url = https://github.com/Wasted-Audio/hvcc.git
+[submodule "Libraries/pd.build"]
+	path = Libraries/pd.build
+	url = https://github.com/pierreguillot/pd.build.git

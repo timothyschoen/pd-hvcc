@@ -1,12 +1,11 @@
 
-#include "../pure-data/src/m_pd.h"
-#include "../pure-data/src/g_canvas.h"
+#include "m_pd.h"
+#include "g_canvas.h"
 
 #include <juce_core/juce_core.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 
 using namespace juce;
-
 
 #include <unordered_map>
 #include "Object.h"
