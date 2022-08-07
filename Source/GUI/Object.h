@@ -91,7 +91,7 @@ struct Object : public Label
         
         auto name = newType.upToFirstOccurrenceOf(" ", false, false);
         
-        if(objectTypes.contains(name)) {
+        if(objectTypes.count(name)) {
             auto spec = objectTypes.at(name);
             num_in = spec.first;
             num_out = spec.second;
@@ -195,7 +195,7 @@ struct Object : public Label
         }
     }
     
-    void mouseMove(const MouseEvent& e) {
+    void mouseMove(const MouseEvent& e) override {
         setMouseCursor(MouseCursor::NormalCursor);
     }
     

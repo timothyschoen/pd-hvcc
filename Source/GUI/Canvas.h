@@ -202,17 +202,7 @@ struct Canvas : public Component, public LassoSource<Component*>
             save += "#X connect " + String(outbox) + " " + String(outlet) + " " + String(inbox) + " " + String(inlet) + ";\n";
         }
         
-        auto saveFile = File::createTempFile(".pd");
-        
-        FileOutputStream fstream(saveFile);
-        fstream.setNewLineString("\n");
-        fstream << save;
-        fstream.flush();
-        
-        auto atoms = std::vector<t_atom>(1);
-        SETSYMBOL(atoms.data(), gensym(saveFile.getFullPathName().toRawUTF8()));
-        
-        pd_typedmess(static_cast<t_pd*>(pdObject), gensym("open"), 1, atoms.data());
+        Compiler::getInstance()->compile(save, static_cast<t_pd*>(pdObject));
         
     }
     

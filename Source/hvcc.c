@@ -12,10 +12,8 @@
 #error dlopen not supported!
 #endif
 #include "HvHeavy.h"
+#include "GUI/Interface.h"
 
-extern void create_gui(const char* content, void* cnv);
-extern void run_loop_until(int ms);
-extern void stop_gui();
 
 #if __linux__
 const char* cxx_flags = "";
@@ -77,7 +75,6 @@ static void get_filename(const char* path, char* filename) {
         ptr = strtok(NULL, delim);
     }
     
-    
     strcpy(filename, last);
     
     char *end = filename + strlen(filename);
@@ -89,8 +86,6 @@ static void get_filename(const char* path, char* filename) {
         (*(end - 1) != '\\' && *(end - 1) != '/')) {
         *end = '\0';
     }
-    
-    
 }
 
 static void hvcc_edit(t_hvcc *x)
@@ -106,50 +101,8 @@ static void hvcc_load(t_hvcc *x, t_symbol* s)
     char external_name[MAXPDSTRING];
     get_filename(s->s_name, external_name);
     
-
-    char lib_dir[MAXPDSTRING];
-    snprintf(lib_dir, sizeof(lib_dir), "%s%s", out_dir, "/lib");
-    
-    char generate[MAXPDSTRING];
-    snprintf(generate, sizeof(generate), "%s -o %s -n %s %s", hvcc_path, out_dir, external_name, s->s_name);
-    
-    // Generate C++ code
-    system(generate);
-    
-    // Clear out previous build just to be sure
-    char clear_command[MAXPDSTRING];
-    snprintf(clear_command, sizeof(clear_command), "rm -rf %s && mkdir -p %s", lib_dir, lib_dir);
-    system(clear_command);
-    
-    // Construct path for .o output from compiler
-    char out_path[MAXPDSTRING];
-    snprintf(out_path, sizeof(out_path), "%s/lib/%s.o", out_dir, external_name);
-    
-    // Construct path for cpp input file
-    char in_path[MAXPDSTRING];
-    snprintf(in_path, sizeof(in_path), "%s/c/Heavy_%s.cpp", out_dir, external_name);
-
-    // Construct compile command
-    char compile_cxx[MAXPDSTRING];
-    snprintf(compile_cxx, sizeof(compile_cxx), "c++ %s -o %s -c %s", cxx_flags, out_path, in_path);
-    
-    // Construct final output path for library
-    char lib_path[MAXPDSTRING];
-    snprintf(lib_path, sizeof(lib_path), "%s/lib/%s.%s", out_dir, external_name, file_ext);
-
-    char link[MAXPDSTRING];
-    snprintf(link, sizeof(link), "cc %s -o %s %s", linker_flags, lib_path, out_path);
-
-    
-    // Compile and link the code
-    system(compile_cxx);
-    system(link);
-    
     // Load the dynamic library we've created
-    void* dlobj = dlopen(lib_path, RTLD_NOW | RTLD_GLOBAL);
-    
-    // Clean up
-    system(clear_command);
+    void* dlobj = dlopen(s->s_name, RTLD_NOW | RTLD_GLOBAL);
     
     // Check for errors
     char* error = dlerror();

@@ -1,13 +1,25 @@
 
+#include <clang/Frontend/CompilerInstance.h>
+#include <clang/Basic/DiagnosticOptions.h>
+#include <clang/Frontend/TextDiagnosticPrinter.h>
+#include <clang/CodeGen/CodeGenAction.h>
+#include <clang/Basic/TargetInfo.h>
+#include <clang/Lex/PreprocessorOptions.h>
+#include <llvm/Support/TargetSelect.h>
+
+
 #include "m_pd.h"
 #include "g_canvas.h"
 
 #include <juce_core/juce_core.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "BinaryData.h"
+
 using namespace juce;
 
 #include <unordered_map>
+#include "Compiler.h"
 #include "Object.h"
 #include "Connection.h"
 #include "Canvas.h"
@@ -28,10 +40,19 @@ public:
     //==============================================================================
     void initialise (const String& commandLine) override
     {
+
     }
     
     void init(void* object) {
         mainWindow.reset (new MainWindow (getApplicationName(), object));
+        
+        auto fsPath = File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile("hvcc~");
+        
+        if(!fsPath.exists()) {
+            MemoryInputStream runtimeEnvironment(BinaryData::Resources_zip, BinaryData::Resources_zipSize, false);
+            auto file = ZipFile(runtimeEnvironment);
+            file.uncompressTo(fsPath);
+        }
     }
     
 
@@ -90,7 +111,9 @@ public:
 
             setVisible (true);
             
+#if JUCE_MAC
             Process::setDockIconVisible(true);
+#endif
         }
 
         void closeButtonPressed() override
@@ -99,7 +122,9 @@ public:
             // ask the app to quit when this happens, but you can change this to do
             // whatever you need.
             setVisible(false);
+#if JUCE_MAC
             Process::setDockIconVisible(false);
+#endif
         }
 
     private:

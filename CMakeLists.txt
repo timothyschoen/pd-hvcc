@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.2)
 
-set (CMAKE_CXX_STANDARD 20)
+set (CMAKE_CXX_STANDARD 17)
 include(${CMAKE_CURRENT_SOURCE_DIR}/Libraries/pd.build/pd.cmake)
 
 set(HVCC_PATH /opt/homebrew/bin/hvcc)
@@ -8,22 +8,35 @@ set(HVCC_PATH /opt/homebrew/bin/hvcc)
 if(APPLE)
   set(CMAKE_XCODE_BUILD_SYSTEM "12" CACHE STRING "" FORCE)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X deployment version")
-  if(RUN_CLANG_TIDY)
   set(CMAKE_OSX_ARCHITECTURES "arm64;" CACHE STRING "" FORCE)
-  else()
-  set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
-  endif()
 endif()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb3 -O0 -std=c++17 -fvisibility=hidden")
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb3 -O0 -std=c++17 -fvisibility=hidden")
+endif()
+
 
 find_package (Python COMPONENTS Interpreter Development)
 
+# handle them in 4 batches because they sometimes get paralellized...
 execute_process(
-    COMMAND ${CMAKE_COMMAND} -E make_directory Resources/
-    COMMAND ${CMAKE_COMMAND} -E copy ${Python_EXECUTABLE} Resources/python
-    COMMAND ${CMAKE_COMMAND} -E copy $(which cc) Resources/cc
-    COMMAND ${CMAKE_COMMAND} -E copy_directory Libraries/hvcc Resources/hvcc
-    COMMAND ${CMAKE_COMMAND} -E tar zcvf Resources/Resources.tar.gz Resources
-    COMMAND ${CMAKE_COMMAND} -E cp
+    COMMAND ${CMAKE_COMMAND} -E remove Resources/Resources.zip
+    COMMAND ${CMAKE_COMMAND} -E make_directory ./Resources/
+    COMMAND ${CMAKE_COMMAND} -E make_directory ./Resources/hvcc
+)
+
+execute_process(
+
+    COMMAND ${CMAKE_COMMAND} -E copy /usr/bin/cc ./Resources/cc
+    COMMAND ${CMAKE_COMMAND} -E copy ${Python_EXECUTABLE} ./Resources/python
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ./Libraries/hvcc ./Resources/hvcc/
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+execute_process(
+    COMMAND ${CMAKE_COMMAND} -E tar cfv ./Resources/Resources.zip --format=zip -- ./Resources/python ./Resources/cc Resources/hvcc
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
@@ -32,18 +45,44 @@ project(hvccgen VERSION 0.0.1 LANGUAGES C CXX)
 add_subdirectory(Libraries/JUCE)
 set(pd_dir ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/pure-data/src)
 
+
+
+#set(CLANG_LIBS clang clangFrontend clangDriver clangSerialization clangParse
+#    clangCodeGen  clangSema clangAnalysis clangEdit clangAST clangLex
+#    clangBasic )
+
+set (CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+find_package (LibClang REQUIRED)
+
+
+link_directories(${LIBCLANG_LIBDIR})
+
+set(CLANG_LIBS clang clangFrontend clangDriver clangSerialization clangParse
+    clangCodeGen  clangSema clangAnalysis clangEdit clangAST clangLex
+    clangBasic )
+
+
 # HVCC GUI
 add_library (hvcc_gui)
-target_link_libraries (hvcc_gui PRIVATE juce::juce_core juce::juce_gui_basics juce::juce_graphics) 
+target_link_libraries (hvcc_gui PRIVATE juce::juce_core juce::juce_gui_basics juce::juce_graphics ${CLANG_LIBS})
 
 file(GLOB hvcc_gui_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/Source/GUI/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Source/GUI/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/JIT/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/JIT/*.cpp
 )
 
+
+
+
 target_compile_definitions(hvcc_gui PUBLIC JUCE_MODAL_LOOPS_PERMITTED=1)
-target_include_directories(hvcc_gui PUBLIC "/Libraries/JUCE/modules" ${pd_dir})
+target_include_directories(hvcc_gui PUBLIC "/Libraries/JUCE/modules" ${pd_dir} ${CMAKE_CURRENT_BINARY_DIR}/juce_binarydata_hvcc_binary_data/JuceLibraryCode/)
 target_sources(hvcc_gui PRIVATE ${hvcc_gui_sources})
+
+string(REPLACE " " ";" __LIST ${LIBCLANG_CXXFLAGS})
+target_compile_options(hvcc_gui PRIVATE ${__LIST})
+
 
 # HVCC External
 set(hvcc_interface_dir ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/hvcc/hvcc/generators/ir2c/static)
@@ -87,7 +126,7 @@ ${hvcc_interface_dir}/HvUtils.c
 )
 
 file(GLOB hvcc_binary_sources
-    ${CMAKE_CURRENT_SOURCE_DIR}/Resources/Resources.tar.gz
+    ${CMAKE_CURRENT_SOURCE_DIR}/Resources/Resources.zip
     )
 
 juce_add_binary_data(hvcc_binary_data SOURCES ${hvcc_binary_sources})

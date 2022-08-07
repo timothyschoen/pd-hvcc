@@ -12,6 +12,7 @@ struct Connection : public Component, public ComponentListener
         inbox = dynamic_cast<Object*>(inlet->getParentComponent());
         outbox = dynamic_cast<Object*>(outlet->getParentComponent());
         
+        
         auto bounds = Rectangle<int>(inlet->getBounds().getCentre(), outlet->getBounds().getCentre());
         setBounds(bounds);
         
