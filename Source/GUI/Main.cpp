@@ -1,4 +1,4 @@
-
+#if ENABLE_LIBCLANG
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Basic/DiagnosticOptions.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
@@ -6,7 +6,7 @@
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Lex/PreprocessorOptions.h>
 #include <llvm/Support/TargetSelect.h>
-
+#endif
 
 #include "m_pd.h"
 #include "g_canvas.h"
