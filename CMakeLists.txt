@@ -15,6 +15,18 @@ if(APPLE)
   endif()
 endif()
 
+find_package (Python COMPONENTS Interpreter Development)
+
+execute_process(
+    COMMAND ${CMAKE_COMMAND} -E make_directory Resources/
+    COMMAND ${CMAKE_COMMAND} -E copy ${Python_EXECUTABLE} Resources/python
+    COMMAND ${CMAKE_COMMAND} -E copy $(which cc) Resources/cc
+    COMMAND ${CMAKE_COMMAND} -E copy_directory Libraries/hvcc Resources/hvcc
+    COMMAND ${CMAKE_COMMAND} -E tar zcvf Resources/Resources.tar.gz Resources
+    COMMAND ${CMAKE_COMMAND} -E cp
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 project(hvccgen VERSION 0.0.1 LANGUAGES C CXX)
 
 add_subdirectory(Libraries/JUCE)
@@ -74,6 +86,12 @@ ${hvcc_interface_dir}/HvTable.c
 ${hvcc_interface_dir}/HvUtils.c
 )
 
+file(GLOB hvcc_binary_sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/Resources/Resources.tar.gz
+    )
+
+juce_add_binary_data(hvcc_binary_data SOURCES ${hvcc_binary_sources})
+set_target_properties(hvcc_binary_data PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 set_pd_sources(${pd_dir})
 set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/External/)
@@ -81,7 +99,7 @@ set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/External/)
 add_pd_external(hvccgen "hvcc~" Source/hvcc.c)
 target_sources(hvccgen PUBLIC ${hvcc_interface})
 target_include_directories(hvccgen PUBLIC ${hvcc_interface_dir})
-target_link_libraries(hvccgen PUBLIC hvcc_gui)
+target_link_libraries(hvccgen PUBLIC hvcc_gui hvcc_binary_data)
 
 if(UNIX)
     target_compile_definitions(hvccgen PUBLIC HAVE_LIBDL=1 HVCC_PATH="${HVCC_PATH}")
