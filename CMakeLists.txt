@@ -35,6 +35,9 @@ execute_process(
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+execute_process(COMMAND ${Python_EXECUTABLE} -m pip install -e .
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/hvcc/)
+
 project(hvccgen VERSION 0.0.1 LANGUAGES C CXX)
 
 add_subdirectory(Libraries/JUCE)
@@ -69,11 +72,11 @@ target_link_libraries (hvcc_gui PRIVATE juce::juce_core juce::juce_gui_basics ju
 file(GLOB hvcc_gui_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/Source/GUI/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Source/GUI/*.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/Source/JIT/*.h
-    #${CMAKE_CURRENT_SOURCE_DIR}/Source/JIT/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/JIT/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/JIT/*.cpp
 )
 
-target_compile_definitions(hvcc_gui PUBLIC JUCE_MODAL_LOOPS_PERMITTED=1)
+target_compile_definitions(hvcc_gui PUBLIC JUCE_MODAL_LOOPS_PERMITTED=1 ENABLE_LIBCLANG=${ENABLE_LIBCLANG})
 target_include_directories(hvcc_gui PUBLIC "/Libraries/JUCE/modules" ${pd_dir} ${CMAKE_CURRENT_BINARY_DIR}/juce_binarydata_hvcc_binary_data/JuceLibraryCode/)
 target_sources(hvcc_gui PRIVATE ${hvcc_gui_sources})
 

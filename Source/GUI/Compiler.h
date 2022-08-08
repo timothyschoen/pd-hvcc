@@ -76,7 +76,10 @@ struct Compiler : public Thread
         // Compile and link the code
         system(compileCommand.toRawUTF8());
         system(linkCommand.toRawUTF8());
-        //assemble(File(inPath).loadFileAsString(), inPath);
+        
+#if ENABLE_LIBCLANG
+        assemble(File(inPath).loadFileAsString(), inPath, externalName);
+#endif
         
         auto atoms = std::vector<t_atom>(1);
         SETSYMBOL(atoms.data(), gensym(libPath.toRawUTF8()));
@@ -92,23 +95,41 @@ struct Compiler : public Thread
         currentPatch = patchContent;
         currentObject = object;
         
-        startThread();
-        
+        //startThread();
+        run();
     }
     
 #if ENABLE_LIBCLANG
-    void assemble(const String& code, const String& filename) {
+    void assemble(const String& code, const String& filename, const String& externalName) {
         const auto* testCodeFileName = filename.toRawUTF8();
         const auto* testCode = code.toRawUTF8();
-
+        
         ClangJitCompiler compiler;
         
         int fileType = ClangJitSourceType_CXX_File;
         
-        compiler.setOptimizeLevel(3);
+        
+        compiler.setWarningLimit(100);
+        compiler.setOptimizeLevel(2);
         setupPredefinedFunctions(compiler);
-        compiler.compile(testCodeFileName, fileType, error_handler);
-        compiler.finalize();
+        try
+        {
+            compiler.compile(testCodeFileName, fileType, error_handler);
+            compiler.finalize();
+        }
+        catch (...)
+        {
+            std::cerr << "Compilation failed" << std::endl;
+        }
+        
+        auto createFuncName = "hv_" + externalName + "_new";
+        auto* createFunc = (void*(*)(double))compiler.getFunctionAddress<void*>(createFuncName.toRawUTF8());
+        
+        auto* obj = createFunc(44100);
+        
+       
+        
+        std::cout << "Done!" << std::endl;
     }
 #endif
     

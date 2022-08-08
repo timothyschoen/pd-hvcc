@@ -93,6 +93,9 @@ struct Canvas : public Component, public LassoSource<Component*>
                 for(auto* object : objects) {
                     object->setSelected(false);
                 }
+                for(auto* connection : connections) {
+                    connection->setSelected(false);
+                }
             }
         }
         if(auto* obj = dynamic_cast<Object*>(e.originalComponent)) {
@@ -167,7 +170,7 @@ struct Canvas : public Component, public LassoSource<Component*>
             }
         }
         
-        if(key == KeyPress::backspaceKey) {
+        if(key == KeyPress::backspaceKey || key == KeyPress::deleteKey) {
             for(auto* item : getLassoSelection()) {
                 if(auto* connection = dynamic_cast<Connection*>(item)) {
                     selectedComponents.deselect(connection);

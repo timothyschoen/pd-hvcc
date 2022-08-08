@@ -592,8 +592,6 @@ void *clang_JitIrCompile(void *ctx, const char *source, int type, error_handler_
     }
     ss << " -fms-extensions";
     
-    ss << " -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk";
-    
     std::istream_iterator<std::string> begin(ss);
     std::istream_iterator<std::string> end;
     std::istream_iterator<std::string> i = begin;
@@ -617,11 +615,6 @@ void *clang_JitIrCompile(void *ctx, const char *source, int type, error_handler_
     auto& targetOptions = compilerInvocation.getTargetOpts();
     targetOptions.Triple = jitContext->triple;
     auto& headerSearchOptions = compilerInvocation.getHeaderSearchOpts();
-    
-#if defined(__APPLE__)
-    
-    headerSearchOptions.AddPath("/Users/timschoen/Downloads/llvm/include/c++/v1", clang::frontend::IncludeDirGroup::System, false, false);
-#endif
     auto& frontEndOptions = compilerInvocation.getFrontendOpts();
     frontEndOptions.Inputs.clear();
     if (jitContext->options[ClangJitOption_DegugMode]) {
@@ -643,8 +636,8 @@ void *clang_JitIrCompile(void *ctx, const char *source, int type, error_handler_
     case ClangJitSourceType_CXX_String:
         // codeGenOptions.UnwindTables = 1;
         // codeGenOptions.Addrsig = 1;
-        // languageOptions->Exceptions = 1;
-        // languageOptions->CXXExceptions = 1;
+         languageOptions->Exceptions = 1;
+         languageOptions->CXXExceptions = 1;
         // languageOptions->RTTI = 1;
         languageOptions->Bool = 1;
         languageOptions->CPlusPlus = 1;
@@ -657,8 +650,12 @@ void *clang_JitIrCompile(void *ctx, const char *source, int type, error_handler_
     case ClangJitSourceType_CXX_File:
         // codeGenOptions.UnwindTables = 1;
         // codeGenOptions.Addrsig = 1;
-        // languageOptions->Exceptions = 1;
-        // languageOptions->CXXExceptions = 1;
+         languageOptions->Exceptions = 1;
+         languageOptions->CXXExceptions = 1;
+         languageOptions->CPlusPlus11 = 1;
+         languageOptions->CPlusPlus14 = 1;
+         languageOptions->CPlusPlus17 = 1;
+            
         // languageOptions->RTTI = 1;
         languageOptions->Bool = 1;
         languageOptions->CPlusPlus = 1;
@@ -686,6 +683,8 @@ void *clang_JitIrCompile(void *ctx, const char *source, int type, error_handler_
     if (!jitContext->module) {
         return nullptr;
     }
+    
+
 
     return jitContext;
 }

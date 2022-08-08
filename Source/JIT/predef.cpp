@@ -103,4 +103,8 @@ void setupPredefinedFunctions(ClangJitCompiler& compiler)
     ClangJitCompiler::addSymbol("fopen", (void*)fopen);
     ClangJitCompiler::addSymbol("fgets", (void*)fgets);
     ClangJitCompiler::addSymbol("fclose", (void*)fclose);
+    
+    //ClangJitCompiler::addSymbol("fopen", (void*)fopen);
+    //ClangJitCompiler::addSymbol("fgets", (void*)fgets);
+    //ClangJitCompiler::addSymbol("fclose", (void*)fclose);
 }
