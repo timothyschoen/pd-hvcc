@@ -6,7 +6,6 @@ set (CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include(${CMAKE_CURRENT_SOURCE_DIR}/Libraries/pd.build/pd.cmake)
 
-set(HVCC_PATH /opt/homebrew/bin/hvcc)
 option(ENABLE_LIBCLANG OFF)
 
 if(APPLE)
@@ -160,5 +159,5 @@ COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.
 )
 
 if(UNIX)
-    target_compile_definitions(hvcc PUBLIC HAVE_LIBDL=1 HVCC_PATH="${HVCC_PATH}")
+    target_compile_definitions(hvcc PUBLIC HAVE_LIBDL=1)
 endif()
