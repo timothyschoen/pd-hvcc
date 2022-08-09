@@ -29,7 +29,7 @@ class HvccEditor  : public JUCEApplication, public ChildProcessWorker
 {
 public:
     
-    const static inline Font DejaVu = Font(Typeface::createSystemTypefaceFor(BinaryData::DejaVuSansMono_ttf, BinaryData::DejaVuSansMono_ttfSize)).withPointHeight(10.f);
+    const Font DejaVu = Font(Typeface::createSystemTypefaceFor(BinaryData::DejaVuSansMono_ttf, BinaryData::DejaVuSansMono_ttfSize)).withPointHeight(10.f);
     
     //==============================================================================
     HvccEditor() {
