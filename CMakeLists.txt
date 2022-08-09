@@ -39,12 +39,6 @@ string(REPLACE " " ";" __LIST ${LIBCLANG_CXXFLAGS})
 target_compile_options(hvcc_gui PRIVATE ${__LIST})
 endif()
 
-if(UNIX AND NOT APPLE)
-target_link_libraries (hvcc_gui PRIVATE curl)
-target_link_libraries (hvcc PRIVATE curl)
-endif()
-
-target_link_libraries (hvcc_gui PRIVATE juce::juce_core juce::juce_gui_basics juce::juce_graphics ${CLANG_LIBS})
 
 if(ENABLE_LIBCLANG)
 file(GLOB hvcc_gui_sources
@@ -134,9 +128,12 @@ target_sources(hvcc PUBLIC ${hvcc_interface} ${extra_sources})
 target_include_directories(hvcc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/JUCE/modules ${hvcc_interface_dir})
 target_link_libraries(hvcc PUBLIC juce::juce_core juce::juce_events) 
 
+target_link_libraries(hvcc_gui PUBLIC hvcc_binary_data juce::juce_core juce::juce_gui_basics juce::juce_graphics ${CLANG_LIBS})
 
-
-target_link_libraries(hvcc_gui PUBLIC hvcc_binary_data)
+if(UNIX AND NOT APPLE)
+target_link_libraries (hvcc_gui PRIVATE curl)
+target_link_libraries (hvcc PRIVATE curl)
+endif()
 
 add_dependencies(hvcc_gui hvcc_binary_data)
 add_dependencies(hvcc hvcc_gui)
@@ -159,5 +156,5 @@ COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.
 )
 
 if(UNIX)
-    target_compile_definitions(hvcc PUBLIC HAVE_LIBDL=1)
+    target_compile_definitions(hvcc PUBLIC HAVE_LIBDL=1 HVCC_PATH="${HVCC_PATH}")
 endif()
