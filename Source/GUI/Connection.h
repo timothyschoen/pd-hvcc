@@ -38,7 +38,7 @@ struct Connection : public Component, public ComponentListener
     }
     
     bool intersectsRectangle(Rectangle<int> rect) {
-        if(!inlet || !outlet) return;
+        if(!inlet || !outlet) return false;
         
         auto* cnv = getParentComponent();
         auto inpos = cnv->getLocalPoint(inlet, inlet->getLocalBounds().getCentre());
