@@ -1,5 +1,6 @@
 #pragma once
 #include "../JIT/jit.h"
+#include "../whereami.h"
 
 void setupPredefinedFunctions(ClangJitCompiler& compiler);
 
@@ -16,12 +17,10 @@ extern "C" int error_handler(int level, const char *filename, int line, int colu
 
 struct Compiler : public Thread
 {
-    const File tmpDir = File::getSpecialLocation(File::tempDirectory);
-    const File library = File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile("hvcc~").getChildFile("Resources");
-    const File ccPath = library.getChildFile("cc");
-    const File pyPath = library.getChildFile("python");
-    const File hvccPath = library.getChildFile("hvcc").getChildFile("hvcc").getChildFile("__init__.py");
-
+    
+    inline static String cxxPath = "";
+    inline static String pyPath = "";
+    inline static File workingDir = File();
     #if JUCE_LINUX
     const String compileFlags = "-std=c++17 -fPIC -Ishared -DHAVE_STRUCT_TIMESPEC -O3 -ffast-math -funroll-loops -fomit-frame-pointer";
     const String dllExtension = "so";
@@ -36,43 +35,90 @@ struct Compiler : public Thread
     const String linkerFlags = "-undefined suppress -flat_namespace -bundle";
     #endif
     
+    
     Compiler() : Thread("Compiler Thread") {
+        
+        
+        if(!workingDir.isDirectory()) {
+            // Get directory of executable
+            int length, dirname_length;
+            length = wai_getExecutablePath(NULL, 0, &dirname_length);
+            if (length == 0) return; // I sure hope this never happens...
+            
+            char* path = (char*)malloc(length + 1);
+            wai_getExecutablePath(path, length, &dirname_length);
+            path[dirname_length] = '\0';
+            
+            workingDir = File(path);
+        }
+        
+        auto pathsFile = workingDir.getChildFile("Paths.xml");
+        if(pathsFile.existsAsFile()) {
+            auto tree = ValueTree::fromXml(pathsFile.loadFileAsString());
+            pyPath = tree.getProperty("python3").toString();
+            cxxPath = tree.getProperty("cxx").toString();
+            
+        }
+        else {
+            
+            // by default, just hope that they are in the $PATH variable
+            setPaths("python3", "c++");
+        }
+        
     }
     
     String currentPatch;
-    t_pd* currentObject = nullptr;
+    String currentObjectID;
+    
+    
+    static void setPaths(String python, String cxx) {
+        pyPath = python;
+        cxxPath = cxx;
+        
+        ValueTree pathsTree("Paths");
+        pathsTree.setProperty("python3", python, nullptr);
+        pathsTree.setProperty("cxx", cxx, nullptr);
+        
+        auto pathsFile = workingDir.getChildFile("Paths.xml");
+        pathsFile.replaceWithText(pathsTree.toXmlString());
+    }
     
     void run() override
     {
-        if(currentPatch.isEmpty() || currentObject == nullptr) return;
-        
         auto saveFile = File::createTempFile(".pd");
         
         FileOutputStream fstream(saveFile);
         fstream.setNewLineString("\n");
         fstream << currentPatch;
         fstream.flush();
+
+        auto script = workingDir.getChildFile("run_hvcc.py");
+        auto tmpDir = workingDir.getChildFile("tmp");
+        tmpDir.createDirectory();
+        
+        auto cxxCommand = cxxPath.isEmpty() ? "c++ " : (cxxPath + " ");
+        auto pyCommand = pyPath.isEmpty() ? "python3 " : (pyPath + " ");
+        auto hvccCommand = pyCommand + script.getFullPathName();
         
         auto externalName = saveFile.getFileNameWithoutExtension();
         
         auto libDir = tmpDir.getChildFile("lib");
         libDir.createDirectory();
         
-        auto generationCommand = "python3 " + hvccPath.getFullPathName() + " -o " + tmpDir.getFullPathName() + " -n " + externalName + " " + saveFile.getFullPathName();
-        
-        auto clearCommand = "rm -rf " + libDir.getFullPathName() + " && mkdir -p " + libDir.getFullPathName();
+        auto generationCommand = hvccCommand + " -o " + tmpDir.getFullPathName() + " -n " + externalName + " " + saveFile.getFullPathName();
         
         auto outPath = libDir.getFullPathName() + "/" + externalName + ".o";
         auto inPath = tmpDir.getFullPathName() + "/c/Heavy_" + externalName + ".cpp";
         auto libPath = libDir.getFullPathName() + "/" + externalName + "." + dllExtension;
         
-        auto compileCommand = "c++ " + compileFlags + " -o " + outPath + " -c " + inPath;
-        auto linkCommand = "cc " + linkerFlags + " -o " + libPath + " " + outPath;
+        auto compileCommand = cxxCommand + compileFlags + " -o " + outPath + " -c " + inPath;
+        auto linkCommand = cxxCommand + linkerFlags + " -o " + libPath + " " + outPath;
         
+        setenv("PATH", "/usr/bin:/usr/local/bin:/opt/homebrew/bin", 1);
+
         // Generate C++ code
         system(generationCommand.toRawUTF8());
-        system(clearCommand.toRawUTF8());
-        
+
         // Compile and link the code
         system(compileCommand.toRawUTF8());
         system(linkCommand.toRawUTF8());
@@ -81,22 +127,29 @@ struct Compiler : public Thread
         assemble(File(inPath).loadFileAsString(), inPath, externalName);
 #endif
         
-        auto atoms = std::vector<t_atom>(1);
-        SETSYMBOL(atoms.data(), gensym(libPath.toRawUTF8()));
+        // Clean up
+        File(outPath).deleteFile();
+        File(tmpDir).getChildFile("c").deleteRecursively();
+        File(tmpDir).getChildFile("ir").deleteRecursively();
+        File(tmpDir).getChildFile("hv").deleteRecursively();
         
-        pd_typedmess(static_cast<t_pd*>(currentObject), gensym("open"), 1, atoms.data());
+        
+        MemoryOutputStream message;
+        message.writeString(currentObjectID);
+        message.writeString("Load");
+        message.writeString(libPath);
+        dynamic_cast<ChildProcessWorker*>(JUCEApplicationBase::getInstance())->sendMessageToCoordinator(message.getMemoryBlock());
     }
     
-    void compile(const String& patchContent, t_pd* object) {
+    void compile(const String& patchContent, String ID) {
         if(isThreadRunning()) {
             std::cout << "Compile action already running!" << std::endl;
             return;
         }
         currentPatch = patchContent;
-        currentObject = object;
+        currentObjectID = ID;
         
-        //startThread();
-        run();
+        startThread(8);
     }
     
 #if ENABLE_LIBCLANG
@@ -126,16 +179,7 @@ struct Compiler : public Thread
         auto* createFunc = (void*(*)(double))compiler.getFunctionAddress<void*>(createFuncName.toRawUTF8());
         
         auto* obj = createFunc(44100);
-        
-       
-        
-        std::cout << "Done!" << std::endl;
     }
 #endif
-    
-    
-    JUCE_DECLARE_SINGLETON(Compiler, false)
 };
-
-JUCE_IMPLEMENT_SINGLETON(Compiler)
 

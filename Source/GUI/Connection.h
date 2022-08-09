@@ -7,11 +7,14 @@ struct Connection : public Component, public ComponentListener
     
     bool isSelected = false;
     
-    Connection(Iolet* inletPtr, Iolet* outletPtr) : inlet(inletPtr), outlet(outletPtr){
+    std::function<void()> selfDestruct;
+    
+    Connection(Component* parent, Iolet* inletPtr, Iolet* outletPtr) : inlet(inletPtr), outlet(outletPtr){
         
         inbox = dynamic_cast<Object*>(inlet->getParentComponent());
         outbox = dynamic_cast<Object*>(outlet->getParentComponent());
         
+        parent->addAndMakeVisible(this);
         
         auto bounds = Rectangle<int>(inlet->getBounds().getCentre(), outlet->getBounds().getCentre());
         setBounds(bounds);
@@ -25,11 +28,18 @@ struct Connection : public Component, public ComponentListener
         outbox->addComponentListener(this);
     }
     
+    ~Connection() {
+        if(inbox) inbox->removeComponentListener(this);
+        if(outbox) outbox->removeComponentListener(this);
+    }
+    
     bool hitTest(int x, int y) override {
         return false;
     }
     
     bool intersectsRectangle(Rectangle<int> rect) {
+        if(!inlet || !outlet) return;
+        
         auto* cnv = getParentComponent();
         auto inpos = cnv->getLocalPoint(inlet, inlet->getLocalBounds().getCentre());
         auto outpos = cnv->getLocalPoint(outlet, outlet->getLocalBounds().getCentre());
@@ -49,6 +59,8 @@ struct Connection : public Component, public ComponentListener
     
     void paint(Graphics& g) override {
         
+        if(!inlet || !outlet) return;
+        
         auto inpos = getLocalPoint(inlet, inlet->getLocalBounds().getCentre().toFloat());
         auto outpos = getLocalPoint(outlet, outlet->getLocalBounds().getCentre().toFloat());
         
@@ -58,6 +70,8 @@ struct Connection : public Component, public ComponentListener
     
     void componentMovedOrResized(Component& component, bool wasMoved, bool wasResized) override
     {
+        if(!inlet || !outlet) return;
+        
         auto* cnv = getParentComponent();
         auto inpos = cnv->getLocalPoint(inlet, inlet->getLocalBounds().getCentre());
         auto outpos = cnv->getLocalPoint(outlet, outlet->getLocalBounds().getCentre());
@@ -66,5 +80,10 @@ struct Connection : public Component, public ComponentListener
         bounds = bounds.withSizeKeepingCentre(std::max(bounds.getWidth(), 2), std::max(bounds.getHeight(), 2));
         setBounds(bounds);
         repaint();
+    }
+    
+    void componentBeingDeleted (Component &component) override
+    {
+        selfDestruct();
     }
 };

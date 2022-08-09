@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.2)
 
+project(hvccgen VERSION 0.0.1 LANGUAGES C CXX)
+
 set (CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include(${CMAKE_CURRENT_SOURCE_DIR}/Libraries/pd.build/pd.cmake)
@@ -15,37 +17,14 @@ endif()
 
 find_package (Python COMPONENTS Interpreter Development)
 
-# handle them in 4 batches because they sometimes get paralellized...
-execute_process(
-    COMMAND ${CMAKE_COMMAND} -E remove Resources/Resources.zip
-    COMMAND ${CMAKE_COMMAND} -E make_directory ./Resources/
-    COMMAND ${CMAKE_COMMAND} -E make_directory ./Resources/hvcc
-)
 
-execute_process(
-
-    COMMAND ${CMAKE_COMMAND} -E copy /usr/bin/cc ./Resources/cc
-    COMMAND ${CMAKE_COMMAND} -E copy ${Python_EXECUTABLE} ./Resources/python
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ./Libraries/hvcc ./Resources/hvcc/
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-execute_process(
-    COMMAND ${CMAKE_COMMAND} -E tar cfv ./Resources/Resources.zip --format=zip -- ./Resources/python ./Resources/cc Resources/hvcc
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-execute_process(COMMAND ${Python_EXECUTABLE} -m pip install -e .
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/hvcc/)
-
-project(hvccgen VERSION 0.0.1 LANGUAGES C CXX)
 
 add_subdirectory(Libraries/JUCE)
 set(pd_dir ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/pure-data/src)
 
 
 # HVCC GUI
-add_library (hvcc_gui)
+add_executable (hvcc_gui)
 
 # libclang switch
 if(ENABLE_LIBCLANG)
@@ -69,12 +48,25 @@ endif()
 
 target_link_libraries (hvcc_gui PRIVATE juce::juce_core juce::juce_gui_basics juce::juce_graphics ${CLANG_LIBS})
 
+if(ENABLE_LIBCLANG)
 file(GLOB hvcc_gui_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/Source/GUI/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Source/GUI/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Source/JIT/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Source/JIT/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/whereami.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/whereami.h
 )
+else()
+file(GLOB hvcc_gui_sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/GUI/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/GUI/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/whereami.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/whereami.h
+)
+endif()
+
+add_compile_definitions(JUCER_ENABLE_GPL_MODE=1 JUCE_DISPLAY_SPLASH_SCREEN=0) 
 
 target_compile_definitions(hvcc_gui PUBLIC JUCE_MODAL_LOOPS_PERMITTED=1 ENABLE_LIBCLANG=${ENABLE_LIBCLANG})
 target_include_directories(hvcc_gui PUBLIC "/Libraries/JUCE/modules" ${pd_dir} ${CMAKE_CURRENT_BINARY_DIR}/juce_binarydata_hvcc_binary_data/JuceLibraryCode/)
@@ -82,7 +74,7 @@ target_sources(hvcc_gui PRIVATE ${hvcc_gui_sources})
 
 
 # HVCC External
-set(hvcc_interface_dir ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/hvcc/hvcc/generators/ir2c/static)
+set(hvcc_interface_dir ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/hvcc_interface)
 file(GLOB hvcc_interface
 ${hvcc_interface_dir}/HeavyContext.cpp
 ${hvcc_interface_dir}/HvControlBinop.c
@@ -122,8 +114,15 @@ ${hvcc_interface_dir}/HvTable.c
 ${hvcc_interface_dir}/HvUtils.c
 )
 
+file(GLOB extra_sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/Interface.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/Interface.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/whereami.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/whereami.h
+)
+
 file(GLOB hvcc_binary_sources
-    ${CMAKE_CURRENT_SOURCE_DIR}/Resources/Resources.zip
+    ${CMAKE_CURRENT_SOURCE_DIR}/Resources/DejaVuSansMono.ttf
     )
 
 juce_add_binary_data(hvcc_binary_data SOURCES ${hvcc_binary_sources})
@@ -133,9 +132,33 @@ set_pd_sources(${pd_dir})
 set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/External/)
 
 add_pd_external(hvccgen "hvcc~" Source/hvcc.c)
-target_sources(hvccgen PUBLIC ${hvcc_interface})
-target_include_directories(hvccgen PUBLIC ${hvcc_interface_dir})
-target_link_libraries(hvccgen PUBLIC hvcc_gui hvcc_binary_data)
+target_sources(hvccgen PUBLIC ${hvcc_interface} ${extra_sources})
+target_include_directories(hvccgen PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/JUCE/modules ${hvcc_interface_dir})
+target_link_libraries(hvccgen PUBLIC juce::juce_core juce::juce_events) 
+
+
+
+target_link_libraries(hvcc_gui PUBLIC hvcc_binary_data)
+
+add_dependencies(hvcc_gui hvcc_binary_data)
+add_dependencies(hvccgen hvcc_gui)
+
+
+set(PD_LIB_DIR "~/Documents/Pd/externals/hvcc~")
+
+add_custom_command(TARGET hvcc_gui POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc_gui> ${PD_LIB_DIR}/$<TARGET_FILE_NAME:hvcc_gui>
+)
+
+add_custom_command(TARGET hvccgen POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvccgen> ${PD_LIB_DIR}/$<TARGET_FILE_NAME:hvccgen>
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc_gui> $<TARGET_FILE_DIR:hvccgen>/$<TARGET_FILE_NAME:hvcc_gui> # for debugging
+)
+
+add_custom_command(TARGET hvccgen POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py ${PD_LIB_DIR}/run_hvcc.py
+COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py $<TARGET_FILE_DIR:hvccgen>/run_hvcc.py
+)
 
 if(UNIX)
     target_compile_definitions(hvccgen PUBLIC HAVE_LIBDL=1 HVCC_PATH="${HVCC_PATH}")
