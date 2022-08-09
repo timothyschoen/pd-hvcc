@@ -141,19 +141,29 @@ add_dependencies(hvcc hvcc_gui)
 
 set(PD_LIB_DIR "~/Documents/Pd/externals/hvcc~")
 
-add_custom_command(TARGET hvcc_gui POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc_gui> ${PD_LIB_DIR}/$<TARGET_FILE_NAME:hvcc_gui>
+
+# make a setup in the hvcc build dir for debugging
+add_custom_command(TARGET hvcc POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc_gui> $<TARGET_FILE_DIR:hvcc>/$<TARGET_FILE_NAME:hvcc_gui>
 )
 
 add_custom_command(TARGET hvcc POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc> ${PD_LIB_DIR}/$<TARGET_FILE_NAME:hvcc>
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc_gui> $<TARGET_FILE_DIR:hvcc>/$<TARGET_FILE_NAME:hvcc_gui> # for debugging
-)
-
-add_custom_command(TARGET hvcc POST_BUILD
-COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py ${PD_LIB_DIR}/run_hvcc.py
 COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py $<TARGET_FILE_DIR:hvcc>/run_hvcc.py
 )
+
+set(INSTALL_FILES 
+    $<TARGET_FILE:hvcc>
+    $<TARGET_FILE:hvcc_gui>
+    ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py
+)
+
+
+add_custom_target(install_external
+COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py ${PD_LIB_DIR}/run_hvcc.py
+COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc_gui> ${PD_LIB_DIR}/$<TARGET_FILE_NAME:hvcc_gui>
+COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc> ${PD_LIB_DIR}/$<TARGET_FILE_NAME:hvcc>
+)
+
 
 if(UNIX)
     target_compile_definitions(hvcc PUBLIC HAVE_LIBDL=1 HVCC_PATH="${HVCC_PATH}")
