@@ -20,7 +20,6 @@ struct Interface : public ChildProcessCoordinator
     
     moodycamel::ConcurrentQueue<MemoryBlock> queue;
     
-    
     Interface() {
         int length, dirname_length;
         length = wai_getModulePath(NULL, 0, &dirname_length);
@@ -35,10 +34,13 @@ struct Interface : public ChildProcessCoordinator
           free(path);
         }
         
-        
+        // Initialise it, but don't use it
+        MessageManager::getInstance();
     };
     
     void handleConnectionLost() override {
+        
+        // This will never get executed...
         std::cout << "Connection lost!" << std::endl;
         
     }

@@ -72,9 +72,7 @@ void hvcc_save(t_gobj *z, t_binbuf *b)
 void hvcc_save_state(void* obj, const char* content)
 {
     t_hvcc* x = (t_hvcc*)obj;
-    if(x->x_state) free(x->x_state);
     x->x_state = strdup(content);
-    
     load_state(x, content);
 }
 
@@ -214,7 +212,7 @@ static void* hvcc_new(t_symbol *s, int argc, t_atom *argv)
         load_state(x, x->x_state);
     }
     else {
-        x->x_state = NULL;
+        x->x_state = "";
     }
     
     x->x_n_in = 0;

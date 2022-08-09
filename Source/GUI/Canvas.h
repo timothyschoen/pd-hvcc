@@ -367,8 +367,8 @@ struct CanvasHolder : public Component
         
         auto buttonBounds = getLocalBounds().removeFromBottom(20);
         recompileButton.setBounds(buttonBounds.removeFromRight(70));
-        saveButton.setBounds(buttonBounds.removeFromRight(60).translated(-1, 0));
-        settingsButton.setBounds(buttonBounds.removeFromRight(60).translated(-1, 0));
+        saveButton.setBounds(buttonBounds.removeFromRight(60).translated(1, 0));
+        settingsButton.setBounds(buttonBounds.removeFromRight(60).translated(2, 0));
     }
     
     TextButton recompileButton = TextButton("Recompile");
