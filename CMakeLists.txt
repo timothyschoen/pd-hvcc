@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.2)
 
-project(hvccgen VERSION 0.0.1 LANGUAGES C CXX)
+project(hvcc VERSION 0.0.1 LANGUAGES C CXX)
 
 set (CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -16,8 +16,6 @@ if(APPLE)
 endif()
 
 find_package (Python COMPONENTS Interpreter Development)
-
-
 
 add_subdirectory(Libraries/JUCE)
 set(pd_dir ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/pure-data/src)
@@ -44,6 +42,7 @@ endif()
 
 if(UNIX AND NOT APPLE)
 target_link_libraries (hvcc_gui PRIVATE curl)
+target_link_libraries (hvcc PRIVATE curl)
 endif()
 
 target_link_libraries (hvcc_gui PRIVATE juce::juce_core juce::juce_gui_basics juce::juce_graphics ${CLANG_LIBS})
@@ -131,17 +130,17 @@ set_target_properties(hvcc_binary_data PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_pd_sources(${pd_dir})
 set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/External/)
 
-add_pd_external(hvccgen "hvcc~" Source/hvcc.c)
-target_sources(hvccgen PUBLIC ${hvcc_interface} ${extra_sources})
-target_include_directories(hvccgen PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/JUCE/modules ${hvcc_interface_dir})
-target_link_libraries(hvccgen PUBLIC juce::juce_core juce::juce_events) 
+add_pd_external(hvcc "hvcc~" Source/hvcc.c)
+target_sources(hvcc PUBLIC ${hvcc_interface} ${extra_sources})
+target_include_directories(hvcc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/JUCE/modules ${hvcc_interface_dir})
+target_link_libraries(hvcc PUBLIC juce::juce_core juce::juce_events) 
 
 
 
 target_link_libraries(hvcc_gui PUBLIC hvcc_binary_data)
 
 add_dependencies(hvcc_gui hvcc_binary_data)
-add_dependencies(hvccgen hvcc_gui)
+add_dependencies(hvcc hvcc_gui)
 
 
 set(PD_LIB_DIR "~/Documents/Pd/externals/hvcc~")
@@ -150,16 +149,16 @@ add_custom_command(TARGET hvcc_gui POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc_gui> ${PD_LIB_DIR}/$<TARGET_FILE_NAME:hvcc_gui>
 )
 
-add_custom_command(TARGET hvccgen POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvccgen> ${PD_LIB_DIR}/$<TARGET_FILE_NAME:hvccgen>
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc_gui> $<TARGET_FILE_DIR:hvccgen>/$<TARGET_FILE_NAME:hvcc_gui> # for debugging
+add_custom_command(TARGET hvcc POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc> ${PD_LIB_DIR}/$<TARGET_FILE_NAME:hvcc>
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc_gui> $<TARGET_FILE_DIR:hvcc>/$<TARGET_FILE_NAME:hvcc_gui> # for debugging
 )
 
-add_custom_command(TARGET hvccgen POST_BUILD
+add_custom_command(TARGET hvcc POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py ${PD_LIB_DIR}/run_hvcc.py
-COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py $<TARGET_FILE_DIR:hvccgen>/run_hvcc.py
+COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py $<TARGET_FILE_DIR:hvcc>/run_hvcc.py
 )
 
 if(UNIX)
-    target_compile_definitions(hvccgen PUBLIC HAVE_LIBDL=1 HVCC_PATH="${HVCC_PATH}")
+    target_compile_definitions(hvcc PUBLIC HAVE_LIBDL=1 HVCC_PATH="${HVCC_PATH}")
 endif()
