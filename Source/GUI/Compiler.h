@@ -60,6 +60,7 @@ struct Compiler : public Thread
             auto tree = ValueTree::fromXml(pathsFile.loadFileAsString());
             pyPath = tree.getProperty("python3").toString();
             cxxPath = tree.getProperty("cxx").toString();
+            checkPaths();
         }
         else {
             // by default, just hope that they are in the $PATH variable
