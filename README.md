@@ -7,6 +7,11 @@ Currently still in development, it works but the editor is still unfinished.
 
 # Build instructions
 
+**Important:**
+- Please ensure that the git submodules are initialized and updated! You can use the `--recursive` option while cloning or `git submodule update --init --recursive` in the PlugData repository .
+- On Linux, JUCE framework requires to install dependencies, please refer to [Linux Dependencies.md](https://github.com/juce-framework/JUCE/blob/master/docs/Linux%20Dependencies.md) and use the full command.
+- The CMake build system has been tested with *Unix Makefiles*, *XCode*
+
 ```
 git clone --recursive https://github.com/timothyschoen/pd-hvccgen.git
 mkdir build && cd build
