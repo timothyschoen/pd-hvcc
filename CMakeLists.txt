@@ -141,13 +141,7 @@ endif()
 add_dependencies(hvcc_gui hvcc_binary_data)
 add_dependencies(hvcc hvcc_gui)
 
-
 set(PD_LIB_DIR "~/Documents/Pd/externals/hvcc~")
-
-
-add_custom_command(TARGET hvcc POST_BUILD
-    COMMAND bash -c "chmod +x $<TARGET_FILE:hvcc_gui>"
-)
 
 # make a setup in the hvcc build dir for debugging
 add_custom_command(TARGET hvcc POST_BUILD
