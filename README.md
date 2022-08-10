@@ -21,12 +21,16 @@ After running, the pd external will be installed to ~/Documents/Pd/externals
 
 If you receive a message in the console that python3 or a c++ compiler wasn't found, open the settings dialog and point to the python3 and c++ compiler you want to use.
 
-I'll add instructions for installing these here soon!
+On macOS (through homebrew):
+```
+command xcode-select --install
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install python3
 
+```
+On Linux, use your package manager to install python3 and gcc (clang is also supported as a replacement for gcc).
 
 # Usage Instructions
-
-
 - Create "hvcc~" object
 - Click on object to open, or use right-click -> open
 - Create a patch and hit compile!
