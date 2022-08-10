@@ -1,29 +1,32 @@
 #pragma once
 
-struct Settings : public Component
+namespace hvcc
 {
 
+struct Settings : public Component
+{
+    
     
     std::unique_ptr<FileChooser> chooser;
     static inline Settings* instance = nullptr;
     
     Settings() {
-
+        
         // Position in centre of screen
         setBounds(Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea.withSizeKeepingCentre(500, 150));
-
+        
         pyPathBrowse.onClick = [this](){
             chooser = std::make_unique<FileChooser>("Find Python3", File::getSpecialLocation(File::userHomeDirectory), "*");
             auto chooserFlags = FileBrowserComponent::openMode | FileBrowserComponent::canSelectDirectories;
-
+            
             chooser->launchAsync(chooserFlags,
-                [this](FileChooser const& fc) {
-                    if (fc.getResult() == File {})
-                        return;
+                                 [this](FileChooser const& fc) {
+                if (fc.getResult() == File {})
+                    return;
                 
                 pyPathEditor.setText(fc.getResult().getFullPathName());
-                    
-                });
+                
+            });
         };
         cxxPathBrowse.onClick = [this](){
             
@@ -31,13 +34,13 @@ struct Settings : public Component
             auto chooserFlags = FileBrowserComponent::openMode | FileBrowserComponent::canSelectDirectories;
             
             chooser->launchAsync(chooserFlags,
-                [this](FileChooser const& fc) {
-                    if (fc.getResult() == File {})
-                        return;
+                                 [this](FileChooser const& fc) {
+                if (fc.getResult() == File {})
+                    return;
                 
-                    cxxPathEditor.setText(fc.getResult().getFullPathName());
-                    
-                });
+                cxxPathEditor.setText(fc.getResult().getFullPathName());
+                
+            });
         };
         
         addAndMakeVisible(pyPathLabel);
@@ -45,11 +48,11 @@ struct Settings : public Component
         
         pyPathLabel.setColour(Label::outlineColourId, Colours::white);
         cxxPathLabel.setColour(Label::outlineColourId, Colours::white);
-    
+        
         
         addAndMakeVisible(pyPathEditor);
         addAndMakeVisible(cxxPathEditor);
-    
+        
         addAndMakeVisible(pyPathBrowse);
         addAndMakeVisible(cxxPathBrowse);
         
@@ -117,8 +120,10 @@ struct Settings : public Component
     TextEditor cxxPathEditor;
     
     TextButton pyPathBrowse = TextButton("Browse");
-    TextButton cxxPathBrowse = TextButton("Browse"); 
+    TextButton cxxPathBrowse = TextButton("Browse");
     
     TextButton okButton = TextButton("OK");
     TextButton cancelButton = TextButton("Cancel");
 };
+
+}

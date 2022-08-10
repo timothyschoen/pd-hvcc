@@ -2,7 +2,8 @@
 #include "../JIT/jit.h"
 #include "../whereami.h"
 
-void setupPredefinedFunctions(ClangJitCompiler& compiler);
+namespace hvcc
+{
 
 extern "C" int error_handler(int level, const char *filename, int line, int column, const char *message)
 {
@@ -20,25 +21,25 @@ struct Compiler : public Thread
     inline static String cxxPath = "";
     inline static String pyPath = "";
     inline static File workingDir = File();
-    #if JUCE_LINUX
+#if JUCE_LINUX
     const String compileFlags = "-std=c++17 -fPIC -Ishared -DHAVE_STRUCT_TIMESPEC -O3 -ffast-math -funroll-loops -fomit-frame-pointer";
     const String dllExtension = "so";
     const String linkerFlags = "-rdynamic -shared -fPIC -Wl,-rpath,\"\\$ORIGIN\",--enable-new-dtags -lc -lm ";
-    #elif JUCE_MAC
+#elif JUCE_MAC
     const String compileFlags = "-std=c++17 -DPD -DUNIX -DMACOSX -I /sw/include -Ishared -DHAVE_STRUCT_TIMESPEC -O3 -ffast-math -funroll-loops -fomit-frame-pointer -arch arm64 -mmacosx-version-min=10.12";
     const String linkerFlags = "-undefined suppress -flat_namespace -bundle  -arch arm64 -mmacosx-version-min=10.12";
     const String dllExtension = "dylib";
-    #elif JUCE_WINDOWS
+#elif JUCE_WINDOWS
     const String compileFlags = "";
     const String dllExtension = "dll";
     const String linkerFlags = "-undefined suppress -flat_namespace -bundle";
-    #endif
+#endif
     
     
     Compiler(bool insideExternal) : Thread("Compiler Thread") {
         
         if(!workingDir.isDirectory()) {
-    
+            
             auto* getPath = insideExternal ? wai_getModulePath : wai_getExecutablePath;
             
             // Get directory of executable
@@ -141,7 +142,7 @@ struct Compiler : public Thread
         fstream.setNewLineString("\n");
         fstream << patchContent;
         fstream.flush();
-
+        
         auto cxxCommand = cxxPath.isEmpty() ? "c++ " : (cxxPath + " ");
         auto pyCommand = pyPath.isEmpty() ? "python3 " : (pyPath + " ");
         auto hvccCommand = pyCommand + script.getFullPathName();
@@ -161,17 +162,13 @@ struct Compiler : public Thread
         auto linkCommand = cxxCommand + linkerFlags + " -o " + libPath + " " + outPath;
         
         setenv("PATH", "/usr/bin:/usr/local/bin:/opt/homebrew/bin", 1);
-
+        
         // Generate C++ code
         system(generationCommand.toRawUTF8());
-
+        
         // Compile and link the code
         system(compileCommand.toRawUTF8());
         system(linkCommand.toRawUTF8());
-        
-#if ENABLE_LIBCLANG
-        assemble(File(inPath).loadFileAsString(), inPath, externalName);
-#endif
         
         // Clean up
         File(outPath).deleteFile();
@@ -191,36 +188,7 @@ struct Compiler : public Thread
         currentObjectID = ID;
         startThread(8);
     }
-    
-    
-#if ENABLE_LIBCLANG
-    void assemble(const String& code, const String& filename, const String& externalName) {
-        const auto* testCodeFileName = filename.toRawUTF8();
-        const auto* testCode = code.toRawUTF8();
-        
-        ClangJitCompiler compiler;
-        
-        int fileType = ClangJitSourceType_CXX_File;
-        
-        
-        compiler.setWarningLimit(100);
-        compiler.setOptimizeLevel(2);
-        setupPredefinedFunctions(compiler);
-        try
-        {
-            compiler.compile(testCodeFileName, fileType, error_handler);
-            compiler.finalize();
-        }
-        catch (...)
-        {
-            std::cerr << "Compilation failed" << std::endl;
-        }
-        
-        auto createFuncName = "hv_" + externalName + "_new";
-        auto* createFunc = (void*(*)(double))compiler.getFunctionAddress<void*>(createFuncName.toRawUTF8());
-        
-        auto* obj = createFunc(44100);
-    }
-#endif
+
 };
 
+}

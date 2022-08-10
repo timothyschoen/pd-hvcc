@@ -2,6 +2,9 @@
 
 #include "Settings.h"
 
+namespace hvcc
+{
+
 struct Canvas : public Component, public LassoSource<Component*>, public Timer
 {
     LassoComponent<Component*> lasso;
@@ -11,10 +14,10 @@ struct Canvas : public Component, public LassoSource<Component*>, public Timer
     
     OwnedArray<Object> objects;
     OwnedArray<Connection> connections;
-
+    
     Iolet* connectingIolet = nullptr;
     Object* objectBeingDragged = nullptr;
-
+    
     
     const int minimumMovementToStartDrag = 10;
     bool didStartDragging = false;
@@ -33,13 +36,13 @@ struct Canvas : public Component, public LassoSource<Component*>, public Timer
         setWantsKeyboardFocus(true);
         
         /*
-        auto line1 = Line<int>(5, 5, 35, 35);
-        auto line2 = Line<int>(6, 5, 36, 5);
-        auto dummy = Point<int>();
-        
-        if(line1.intersects(line2, dummy)) {
-            std::cout << "false positive!" << std::endl;
-        } */
+         auto line1 = Line<int>(5, 5, 35, 35);
+         auto line2 = Line<int>(6, 5, 36, 5);
+         auto dummy = Point<int>();
+         
+         if(line1.intersects(line2, dummy)) {
+         std::cout << "false positive!" << std::endl;
+         } */
         
         getProperties().set("Update", var(var::NativeFunction([this](const var::NativeFunctionArgs&) -> var {
             startNewAction();
@@ -100,7 +103,7 @@ struct Canvas : public Component, public LassoSource<Component*>, public Timer
             }
         }
     }
-
+    
     void mouseDown(const MouseEvent& e) override
     {
         if(e.originalComponent == this) {
@@ -221,11 +224,16 @@ struct Canvas : public Component, public LassoSource<Component*>, public Timer
                 auto pos = getMouseXYRelative();
                 auto* obj = objects.add(new Object(this, "", pos.x, pos.y));
                 obj->showEditor();
+                return true;
             }
             if(key.getKeyCode() == 50) {
-                //auto pos = getMouseXYRelative();
-                //auto* obj = objects.add(new Message(this, "", pos.x, pos.y));
+                auto pos = getMouseXYRelative();
+                auto* obj = objects.add(new hvcc::Message(this, "", pos.x, pos.y));
+                obj->showEditor();
+                return true;
             }
+            
+            return false;
         }
         
         if(key == KeyPress::backspaceKey || key == KeyPress::deleteKey) {
@@ -252,7 +260,7 @@ struct Canvas : public Component, public LassoSource<Component*>, public Timer
         }
         
         for(auto* con : connections) {
-           
+            
             int outbox = objects.indexOf(con->outbox);
             int inbox  = objects.indexOf(con->inbox);
             int outlet = con->outbox->iolets.indexOf(con->outlet) - con->outbox->numInlets;
@@ -283,6 +291,15 @@ struct Canvas : public Component, public LassoSource<Component*>, public Timer
                 objects.add(new Object(this, name, x, y));
                 
             }
+            if(line.startsWith("#X msg"))
+            {
+                auto objDefinition = StringArray::fromTokens(line, true);
+                int x = objDefinition[2].getIntValue();
+                int y = objDefinition[3].getIntValue();
+                String name = objDefinition.joinIntoString(" ", 4);
+                if(name.getLastCharacter() == ';') name = name.dropLastCharacters(1);
+                objects.add(new Message(this, name, x, y));
+            }
             if(line.startsWith("#X connect"))
             {
                 auto connectionDefinition = StringArray::fromTokens(line, true);
@@ -304,7 +321,7 @@ struct Canvas : public Component, public LassoSource<Component*>, public Timer
             
         }
     }
-   
+    
     void saveState(String state) {
         MemoryOutputStream message;
         message.writeString(objectID);
@@ -335,16 +352,16 @@ struct Canvas : public Component, public LassoSource<Component*>, public Timer
                 obj->setTopLeftPosition(x, y);
             }
         }
-
+        
         setBounds(viewBounds.withZeroOrigin());
     }
-
-        
+    
+    
     template <typename T>
     Array<T*> getSelectionOfType()
     {
         Array<T*> result;
-
+        
         for (auto* obj : selectedComponents)
         {
             if (auto* objOfType = dynamic_cast<T*>(obj))
@@ -352,7 +369,7 @@ struct Canvas : public Component, public LassoSource<Component*>, public Timer
                 result.add(objOfType);
             }
         }
-
+        
         return result;
     }
 };
@@ -366,7 +383,7 @@ struct CanvasHolder : public Component
     {
         setSize(500, 300);
         viewport.setViewedComponent(&cnv);
-    
+        
         
         recompileButton.setConnectedEdges(12);
         settingsButton.setConnectedEdges(12);
@@ -403,3 +420,5 @@ struct CanvasHolder : public Component
     TextButton settingsButton = TextButton("Settings");
     
 };
+
+}

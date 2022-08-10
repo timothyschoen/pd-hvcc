@@ -1,5 +1,8 @@
 #pragma once
 
+namespace hvcc
+{
+
 struct Connection : public Component, public ComponentListener
 {
     SafePointer<Iolet> inlet, outlet;
@@ -55,7 +58,7 @@ struct Connection : public Component, public ComponentListener
         auto* cnv = getParentComponent();
         auto inpos = cnv->getLocalPoint(inlet, inlet->getLocalBounds().toFloat().getCentre());
         auto outpos = cnv->getLocalPoint(outlet, outlet->getLocalBounds().toFloat().getCentre());
-
+        
         auto intersects = rect.toFloat().intersects(Line<float>(inpos, outpos));
         return intersects;
     }
@@ -101,3 +104,5 @@ struct Connection : public Component, public ComponentListener
         selfDestruct();
     }
 };
+
+}

@@ -1,6 +1,7 @@
 #pragma once
 
-
+namespace hvcc
+{
 
 struct ObjectInfo
 {
@@ -22,49 +23,49 @@ struct ObjectInfo
     
     inline static std::unordered_map<String, std::function<ObjectSpec(StringArray)>> specialObjects = {
         {"pack",
-        [](StringArray args) -> std::pair<int, int> {
-            return {std::max(args.size(), 2), 1};
-        }},
+            [](StringArray args) -> std::pair<int, int> {
+                return {std::max(args.size(), 2), 1};
+            }},
         {"sel",
-        [](StringArray args) -> std::pair<int, int> {
-            return {1, args.size() + 1};
-        }},
+            [](StringArray args) -> std::pair<int, int> {
+                return {1, args.size() + 1};
+            }},
         {"select",
-        [](StringArray args) -> std::pair<int, int> {
-            return {1, args.size() + 1};
-        }},
+            [](StringArray args) -> std::pair<int, int> {
+                return {1, args.size() + 1};
+            }},
         {"unpack",
-        [](StringArray args) -> std::pair<int, int> {
-            if(args.size() == 0) {
-                return {1, 2};
-            }
-            else {
-                return {1, args.size()};
-            }
-        }},
+            [](StringArray args) -> std::pair<int, int> {
+                if(args.size() == 0) {
+                    return {1, 2};
+                }
+                else {
+                    return {1, args.size()};
+                }
+            }},
         {"trigger",
-        [](StringArray args) -> std::pair<int, int> {
-            if(args.size() == 0) {
-                return {1, 2};
-            }
-            else {
-                return {1, args.size()};
-            }
-        }},
+            [](StringArray args) -> std::pair<int, int> {
+                if(args.size() == 0) {
+                    return {1, 2};
+                }
+                else {
+                    return {1, args.size()};
+                }
+            }},
         {"t",
-        [](StringArray args) -> std::pair<int, int> {
-            if(args.size() == 0) {
-                return {1, 2};
-            }
-            else {
-                return {1, args.size()};
-            }
-            
-        }},
+            [](StringArray args) -> std::pair<int, int> {
+                if(args.size() == 0) {
+                    return {1, 2};
+                }
+                else {
+                    return {1, args.size()};
+                }
+                
+            }},
         
         // TODO: gate, maybe more?
     };
-
+    
     inline static std::unordered_map<String, ObjectSpec> objectTypes = {
         {"!=", {2, 1}},
         {"%", {2, 1}},
@@ -223,3 +224,5 @@ struct ObjectInfo
         {"wrap~", {1, 1}}
     };
 };
+
+}

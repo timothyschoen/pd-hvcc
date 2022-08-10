@@ -10,6 +10,9 @@ using namespace juce;
 #include "Interface.h"
 #include "GUI/Compiler.h"
 
+namespace hvcc
+{
+
 struct Interface : public ChildProcessCoordinator
 {
     String ID = "test_id";
@@ -27,13 +30,13 @@ struct Interface : public ChildProcessCoordinator
         length = wai_getModulePath(NULL, 0, &dirname_length);
         if (length > 0)
         {
-          char* path = (char*)malloc(length + 1);
-          wai_getModulePath(path, length, &dirname_length);
-          path[dirname_length] = '\0';
-
-          launchWorkerProcess (File(String(path) + "/hvcc_gui"), ID, 10000);
-          
-          free(path);
+            char* path = (char*)malloc(length + 1);
+            wai_getModulePath(path, length, &dirname_length);
+            path[dirname_length] = '\0';
+            
+            launchWorkerProcess (File(String(path) + "/hvcc_gui"), ID, 10000);
+            
+            free(path);
         }
         
         // Initialise it, but don't use it
@@ -126,7 +129,7 @@ struct Interface : public ChildProcessCoordinator
     
     void loadLibrary(void* external, const String& path) {
         auto name = File(path).getFileNameWithoutExtension();
-
+        
         loadedLibraries[ID] = std::make_unique<DynamicLibrary>();
         auto* lib = loadedLibraries[ID].get();
         lib->open(path);
@@ -156,28 +159,29 @@ struct Interface : public ChildProcessCoordinator
 };
 
 JUCE_IMPLEMENT_SINGLETON(Interface);
+}
 
 void init_interface() {
-    Interface::getInstance();
+    hvcc::Interface::getInstance();
 }
 void open_window(void* obj) {
-    Interface::getInstance()->openWindow(obj);
+    hvcc::Interface::getInstance()->openWindow(obj);
 }
 
 void close_window() {
-    Interface::getInstance()->closeWindow();
+    hvcc::Interface::getInstance()->closeWindow();
 }
 
 void load_state(void* obj, const char* content)
 {
     // Pass state to GUI
-    Interface::getInstance()->loadState(obj, content);
+    hvcc::Interface::getInstance()->loadState(obj, content);
     
     // Compile and load last state
-    Interface::getInstance()->compileAndLoad(obj, content);
+    hvcc::Interface::getInstance()->compileAndLoad(obj, content);
 }
 
 
 void dequeue_messages() {
-    Interface::getInstance()->dequeueMessages();
+    hvcc::Interface::getInstance()->dequeueMessages();
 }

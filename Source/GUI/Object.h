@@ -1,6 +1,9 @@
 #pragma once
 #include "Objects.h"
 
+namespace hvcc
+{
+
 struct Iolet : public Component
 {
     bool isOutlet;
@@ -31,7 +34,7 @@ struct Object : public Label
     
     int numInlets = 0;
     int numOutlets = 0;
-        
+    
     bool validObject = false;
     bool isSelected = false;
     
@@ -43,7 +46,7 @@ struct Object : public Label
     {
         setType(name);
         repaint();
-
+        
         setFont(Font(14));
         
         setBounds(x, y, std::max(getFont().getStringWidth(name) + 6, 25), 20);
@@ -57,7 +60,7 @@ struct Object : public Label
             auto* editor = getCurrentTextEditor();
             editor->onTextChange = [this, editor]() {
                 auto width = getFont().getStringWidth(editor->getText()) + 15;
-
+                
                 if (width > getWidth()) {
                     setSize(width, getHeight());
                 }
@@ -81,7 +84,7 @@ struct Object : public Label
         }
     }
     
-    void setType(String newType) {
+    virtual void setType(const String& newType) {
         if(type == newType) return;
         
         type = newType;
@@ -200,8 +203,10 @@ struct Object : public Label
         setMouseCursor(MouseCursor::NormalCursor);
     }
     
-    String getState() {
+    virtual String getState() {
         return "#X obj " + String(getX()) + " " + String(getY()) + " " + getText() + ";\n";
     }
     
 };
+
+}

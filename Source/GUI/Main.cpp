@@ -21,9 +21,12 @@ using namespace juce;
 #include <unordered_map>
 #include "Compiler.h"
 #include "Object.h"
+#include "Message.h"
 #include "Connection.h"
 #include "Canvas.h"
 
+namespace hvcc
+{
 //==============================================================================
 class HvccEditor  : public JUCEApplication, public ChildProcessWorker
 {
@@ -35,11 +38,11 @@ public:
     HvccEditor() {
         LookAndFeel::getDefaultLookAndFeel().setDefaultSansSerifTypeface(DejaVu.getTypefacePtr());
     }
-
+    
     const String getApplicationName() override       { return "hvcc~"; }
     const String getApplicationVersion() override    { return "0.0.1"; }
     bool moreThanOneInstanceAllowed() override             { return true; }
-
+    
     //==============================================================================
     void initialise (const String& commandLine) override
     {
@@ -51,8 +54,8 @@ public:
             createPatch("test", true);
         }
     }
-
-
+    
+    
     void shutdown() override
     {
         patchWindows.clear();
@@ -82,13 +85,13 @@ public:
             windowsById[ID]->toFront(true);
         }
     }
-
+    
     //==============================================================================
     void systemRequestedQuit() override
     {
         // Do nothing!
     }
-
+    
     void anotherInstanceStarted (const String& commandLine) override
     {
     }
@@ -127,30 +130,30 @@ public:
     void handleConnectionLost() override {
         appWillTerminateByForce();
     }
-
+    
     class PatchWindow : public DocumentWindow
     {
     public:
         
         CanvasHolder* cnv;
         PatchWindow (String name, String ID)
-            : DocumentWindow (name,
-                              Desktop::getInstance().getDefaultLookAndFeel()
-                                                          .findColour (ResizableWindow::backgroundColourId),
-                              DocumentWindow::allButtons)
+        : DocumentWindow (name,
+                          Desktop::getInstance().getDefaultLookAndFeel()
+                          .findColour (ResizableWindow::backgroundColourId),
+                          DocumentWindow::allButtons)
         {
             setUsingNativeTitleBar (true);
             cnv = new CanvasHolder(ID);
             setContentOwned (cnv, true);
-
-           #if JUCE_IOS || JUCE_ANDROID
+            
+#if JUCE_IOS || JUCE_ANDROID
             setFullScreen (true);
-           #else
+#else
             setResizable (true, true);
             setSize(400, 300);
             
-           #endif
-
+#endif
+            
             setVisible (true);
             
 #if JUCE_MAC
@@ -180,19 +183,20 @@ public:
             getLookAndFeel().setColour(TextEditor::outlineColourId, Colours::black);
             getLookAndFeel().setColour(TextEditor::textColourId, Colours::black);
         }
-
-
+        
+        
         void closeButtonPressed() override
         {
             setVisible(false);
         }
-
+        
     private:
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PatchWindow)
     };
-
+    
     std::map<String, PatchWindow*> windowsById;
     OwnedArray<PatchWindow> patchWindows;
 };
 
 START_JUCE_APPLICATION(HvccEditor)
+}
