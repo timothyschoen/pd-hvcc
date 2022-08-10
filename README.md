@@ -28,5 +28,5 @@ I'll add instructions for installing these here soon!
 
 
 - Create "hvcc~" object
-- Send click on object to open, or use right-click -> open
+- Click on object to open, or use right-click -> open
 - Create a patch and hit compile!
