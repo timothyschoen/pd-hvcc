@@ -13,7 +13,8 @@ Currently still in development, it works but the editor is still unfinished.
 - The CMake build system has been tested with *Unix Makefiles* and *XCode*
 
 ```
-git clone --recursive https://github.com/timothyschoen/pd-hvccgen.git
+git clone --recursive https://github.com/timothyschoen/pd-hvcc.git
+cd pd-hvcc
 mkdir build && cd build
 cmake ..
 make
