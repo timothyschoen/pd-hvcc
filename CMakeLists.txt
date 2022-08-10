@@ -19,7 +19,7 @@ find_package (Python COMPONENTS Interpreter Development)
 
 
 # configure build system for external libraries
-add_subdirectory(Libraries/JUCE)
+add_subdirectory(Libraries/JUCE EXCLUDE_FROM_ALL)
 
 
 set(pd_dir ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/pure-data/src)
@@ -160,12 +160,6 @@ set(INSTALL_FILES
     $<TARGET_FILE:hvcc>
     $<TARGET_FILE:hvcc_gui>
     ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py
-)
-
-add_custom_target(install_external
-COMMAND ${CMAKE_COMMAND} -E copy  ${PD_LIB_DIR}/run_hvcc.py
-COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc_gui> ${PD_LIB_DIR}/$<TARGET_FILE_NAME:hvcc_gui>
-COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc> ${PD_LIB_DIR}/$<TARGET_FILE_NAME:hvcc>
 )
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py $<TARGET_FILE:hvcc_gui> $<TARGET_FILE:hvcc> DESTINATION ${PD_LIB_DIR})
