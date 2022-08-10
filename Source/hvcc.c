@@ -14,6 +14,8 @@
 
 #include "Interface.h"
 
+t_widgetbehavior hvcc_widgetbehaviour;
+
 
 #if __linux__
 const char* cxx_flags = "";
@@ -53,6 +55,7 @@ typedef struct _hvcc
     
 } t_hvcc;
 
+
 static void printHook(void* c, const char* receiverName, const char* msgString, const HvMessage* m) {
     double timestampMs = 1000.0 * ((double) hv_msg_getTimestamp(m)) / hv_getSampleRate(c);
     post("[hvcc~ @ %0.3gms] %s: %s", timestampMs, receiverName, msgString);
@@ -65,9 +68,9 @@ void hvcc_save(t_gobj *z, t_binbuf *b)
     binbuf_addv(b, "ssiiss", gensym("#X"), gensym("obj"),
                 (int)x->x_obj.te_xpix, (int)x->x_obj.te_ypix,
                 gensym("hvcc~"), gensym(x->x_state));
+    
     binbuf_addv(b, ";");
 }
-
 
 void hvcc_save_state(void* obj, const char* content)
 {
@@ -75,8 +78,6 @@ void hvcc_save_state(void* obj, const char* content)
     x->x_state = strdup(content);
     load_state(x, content);
 }
-
-
 
 static void get_filename(const char* path, char* filename) {
     strcpy(filename, path);
@@ -107,7 +108,7 @@ static void get_filename(const char* path, char* filename) {
 }
 
 static void hvcc_click(t_hvcc* x, t_floatarg xpos, t_floatarg ypos,
-                            t_floatarg shift, t_floatarg ctrl, t_floatarg alt)
+                       t_floatarg shift, t_floatarg ctrl, t_floatarg alt)
 {
     open_window(x);
 }
@@ -126,7 +127,7 @@ void hvcc_load(void* obj, t_create create)
     t_hvcc* x = (t_hvcc*)obj;
     // Create the patch instance
     x->x_hv_object = create(sys_getsr());
-        
+    
     int old_n_in = x->x_n_in;
     int old_n_out = x->x_n_out;
     
@@ -170,7 +171,42 @@ void hvcc_load(void* obj, t_create create)
     hv_setPrintHook(x->x_hv_object, printHook);
 }
 
+static t_int* hvcc_vis(t_gobj *z, t_glist *glist, int vis) {
+    
+    t_text *x = (t_text *)z;
+    if (vis)
+    {
+        t_rtext *y = glist_findrtext(glist, x);
+        if (y && gobj_shouldvis(&x->te_g, glist))
+        {
+            text_drawborder(x, glist, rtext_gettag(y),
+                            rtext_width(y), rtext_height(y), 1);
+            
+            // Don't show the long base64 state!
+            binbuf_free(x->te_binbuf);
+            t_binbuf* b = binbuf_new();
+            binbuf_text(b, "hvcc~", 5);
+            x->te_binbuf = b;
+            
+            rtext_retext(y);
+            rtext_draw(y);
+        }
+    }
+    else
+    {
+        t_rtext *y = glist_findrtext(glist, x);
+        if (y && gobj_shouldvis(&x->te_g, glist))
+        {
+            text_eraseborder(x, glist, rtext_gettag(y));
+            rtext_erase(y);
+        }
+    }
+    
+    
+}
+
 static t_int* hvcc_tick(t_hvcc* x) {
+    
     dequeue_messages();
     clock_delay(x->x_clock, 20);
 }
@@ -190,7 +226,7 @@ static t_int* hvcc_perform(t_int* w) {
     
     input_pointers = (t_sample**)w + offset;
     output_pointers = (t_sample**)w + x->x_n_in + offset;
-
+    
     int n = (int) (w[x->x_n_in + x->x_n_out + offset]);
     
     hv_process(x->x_hv_object, input_pointers, output_pointers, n);
@@ -207,20 +243,23 @@ static void* hvcc_new(t_symbol *s, int argc, t_atom *argv)
     
     init_interface();
     
-    if(argc == 1) {
-        x->x_state = (char*)atom_getsymbol(argv)->s_name;
-        load_state(x, x->x_state);
-    }
-    else {
-        x->x_state = "";
-    }
-    
     x->x_n_in = 0;
     x->x_n_out = 0;
     x->x_hv_object = NULL;
     
     x->x_glist = canvas_getcurrent();
     x->x_clock = clock_new(x, (t_method)hvcc_tick);
+    
+    if(argc == 1) {
+        x->x_state = (char*)atom_getsymbol(argv)->s_name;
+        load_state(x, x->x_state);
+        
+        
+    }
+    else {
+        x->x_state = "";
+    }
+    
     clock_delay(x->x_clock, 20);
     
     return (x);
@@ -244,10 +283,15 @@ void hvcc_tilde_setup(void)
     class_addmethod(hvcc_class, hvcc_focus, gensym("_focus"), A_FLOAT, 0);
     class_addmethod(hvcc_class, hvcc_edit, gensym("menu-open"), A_NULL);
     
+    hvcc_widgetbehaviour = text_widgetbehavior;
+    hvcc_widgetbehaviour.w_visfn = hvcc_vis;
+    
+    class_setwidget(hvcc_class, &hvcc_widgetbehaviour);
+    
     class_setsavefn(hvcc_class, hvcc_save);
     
     class_addmethod(hvcc_class, (t_method)hvcc_click,
-        gensym("click"), A_FLOAT, A_FLOAT, A_FLOAT, A_FLOAT, A_FLOAT, 0);
+                    gensym("click"), A_FLOAT, A_FLOAT, A_FLOAT, A_FLOAT, A_FLOAT, 0);
     
     class_addmethod(hvcc_class, (t_method)hvcc_dsp,
                     gensym("dsp"), 0);
@@ -265,7 +309,6 @@ static void hvcc_dsp(t_hvcc* x, t_signal** sp) {
     argv = calloc(sizeof(t_int), argc);
     
     argv[0] = (t_int)x;
-    
     
     for(int ch = 0; ch < actual_in + x->x_n_out; ch++) {
         argv[ch + 1] = sp[ch]->s_vec;

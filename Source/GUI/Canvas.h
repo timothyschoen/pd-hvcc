@@ -2,7 +2,7 @@
 
 #include "Settings.h"
 
-struct Canvas : public Component, public LassoSource<Component*>
+struct Canvas : public Component, public LassoSource<Component*>, public Timer
 {
     LassoComponent<Component*> lasso;
     
@@ -21,7 +21,7 @@ struct Canvas : public Component, public LassoSource<Component*>
     
     String objectID;
     
-    Canvas(Viewport* port, String ID) : objectID(ID), viewport(port) {
+    Canvas(Viewport* port, String ID) : objectID(ID), viewport(port), compiler(false) {
         
         setSize(500, 300);
         addAndMakeVisible(&lasso);
@@ -31,8 +31,33 @@ struct Canvas : public Component, public LassoSource<Component*>
         lasso.setColour(LassoComponent<Component*>::lassoOutlineColourId, Colours::black);
         
         setWantsKeyboardFocus(true);
+        
+        /*
+        auto line1 = Line<int>(5, 5, 35, 35);
+        auto line2 = Line<int>(6, 5, 36, 5);
+        auto dummy = Point<int>();
+        
+        if(line1.intersects(line2, dummy)) {
+            std::cout << "false positive!" << std::endl;
+        } */
+        
+        getProperties().set("Update", var(var::NativeFunction([this](const var::NativeFunctionArgs&) -> var {
+            startNewAction();
+            return var();
+        })));
+        
     }
     
+    
+    void startNewAction() {
+        startTimer(100);
+    }
+    
+    void timerCallback() override {
+        auto state = getContent();
+        saveState(state);
+        stopTimer();
+    }
     
     void paint(Graphics& g) override
     {
@@ -46,6 +71,7 @@ struct Canvas : public Component, public LassoSource<Component*>
             g.setColour(Colours::black);
             g.drawLine(start.x, start.y, end.x, end.y);
         }
+        g.setColour(Colours::black);
     }
     
     SelectedItemSet<Component*> selectedComponents;
@@ -129,9 +155,14 @@ struct Canvas : public Component, public LassoSource<Component*>
                         if(inlet->getParentComponent() == outlet->getParentComponent()) return;
                         
                         auto* connection = connections.add(new Connection(this, inlet, outlet));
+                        startNewAction();
                     }
                 }
             }
+        }
+        
+        if(e.originalComponent != this && selectedComponents.getNumSelected() && e.mouseWasDraggedSinceMouseDown()) {
+            startNewAction();
         }
         
         connectingIolet = nullptr;
@@ -198,6 +229,8 @@ struct Canvas : public Component, public LassoSource<Component*>
         }
         
         if(key == KeyPress::backspaceKey || key == KeyPress::deleteKey) {
+            if(selectedComponents.getNumSelected()) startNewAction();
+            
             for(auto* connection : getSelectionOfType<Connection>()) {
                 selectedComponents.deselect(connection);
                 connections.removeObject(connection);
@@ -206,6 +239,7 @@ struct Canvas : public Component, public LassoSource<Component*>
                 selectedComponents.deselect(obj);
                 removeObject(obj);
             }
+            
         }
     }
     
@@ -230,7 +264,7 @@ struct Canvas : public Component, public LassoSource<Component*>
         return save;
     }
     
-    void loadState(String saveContent) {
+    void loadState(const String& saveContent) {
         MemoryOutputStream ostream;
         Base64::convertFromBase64(ostream, saveContent);
         auto patchContent = String((char*)ostream.getData(), ostream.getDataSize());
@@ -271,11 +305,11 @@ struct Canvas : public Component, public LassoSource<Component*>
         }
     }
    
-    void saveState() {
+    void saveState(String state) {
         MemoryOutputStream message;
         message.writeString(objectID);
         message.writeString("SaveState");
-        message.writeString(Base64::toBase64(getContent()));
+        message.writeString(Base64::toBase64(state));
         dynamic_cast<ChildProcessWorker*>(JUCEApplicationBase::getInstance())->sendMessageToCoordinator(message.getMemoryBlock());
         
     }
@@ -335,12 +369,10 @@ struct CanvasHolder : public Component
     
         
         recompileButton.setConnectedEdges(12);
-        saveButton.setConnectedEdges(12);
         settingsButton.setConnectedEdges(12);
         
         addAndMakeVisible(viewport);
         addAndMakeVisible(recompileButton);
-        addAndMakeVisible(saveButton);
         addAndMakeVisible(settingsButton);
         
         viewport.setScrollBarsShown(false, false, true, true);
@@ -349,9 +381,6 @@ struct CanvasHolder : public Component
             cnv.recompile();
         };
         
-        saveButton.onClick = [this](){
-            cnv.saveState();
-        };
         settingsButton.onClick = [](){
             Settings::showSettingsDialog();
         };
@@ -367,12 +396,10 @@ struct CanvasHolder : public Component
         
         auto buttonBounds = getLocalBounds().removeFromBottom(20);
         recompileButton.setBounds(buttonBounds.removeFromRight(70));
-        saveButton.setBounds(buttonBounds.removeFromRight(60).translated(1, 0));
         settingsButton.setBounds(buttonBounds.removeFromRight(60).translated(2, 0));
     }
     
     TextButton recompileButton = TextButton("Recompile");
-    TextButton saveButton = TextButton("Save");
     TextButton settingsButton = TextButton("Settings");
     
 };

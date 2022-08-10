@@ -33,17 +33,31 @@ struct Connection : public Component, public ComponentListener
         if(outbox) outbox->removeComponentListener(this);
     }
     
+    
     bool hitTest(int x, int y) override {
-        return false;
+        
+        if(!inlet || !outlet) return false;
+        
+        auto inpos = getLocalPoint(inlet, inlet->getLocalBounds().getCentre().toFloat());
+        auto outpos = getLocalPoint(outlet, outlet->getLocalBounds().getCentre().toFloat());
+        
+        Point<float> dummy;
+        Point<float> position(x, y);
+        
+        auto distanceToInlet  = inpos.getDistanceFrom(position);
+        auto distanceToOutlet = outpos.getDistanceFrom(position);
+        auto distanceToCord   = Line<float>(inpos, outpos).getDistanceFromPoint(position, dummy);
+        
+        return distanceToCord < 4 && distanceToInlet > 4 && distanceToOutlet > 4;
     }
     
     bool intersectsRectangle(Rectangle<int> rect) {
-        if(!inlet || !outlet) return false;
-        
         auto* cnv = getParentComponent();
-        auto inpos = cnv->getLocalPoint(inlet, inlet->getLocalBounds().getCentre());
-        auto outpos = cnv->getLocalPoint(outlet, outlet->getLocalBounds().getCentre());
-        return rect.intersects(Line<int>(inpos, outpos));
+        auto inpos = cnv->getLocalPoint(inlet, inlet->getLocalBounds().toFloat().getCentre());
+        auto outpos = cnv->getLocalPoint(outlet, outlet->getLocalBounds().toFloat().getCentre());
+
+        auto intersects = rect.toFloat().intersects(Line<float>(inpos, outpos));
+        return intersects;
     }
     
     void visibilityChanged() override {

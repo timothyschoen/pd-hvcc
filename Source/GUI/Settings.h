@@ -111,7 +111,7 @@ struct Settings : public Component
     }
     
     Label pyPathLabel = Label("python3", "Path to python3:");
-    Label cxxPathLabel = Label("cxx", "Path to C++ compiler:");
+    Label cxxPathLabel = Label("cxx", "Path to c++ compiler:");
     
     TextEditor pyPathEditor;
     TextEditor cxxPathEditor;

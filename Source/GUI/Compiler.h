@@ -7,13 +7,12 @@ void setupPredefinedFunctions(ClangJitCompiler& compiler);
 extern "C" int error_handler(int level, const char *filename, int line, int column, const char *message)
 {
     static int count = 0;
-    static char *levelString[] = {"Ignore", "Note", "Remark", "Warning", "Error", "Fatal"};
+    static const char *levelString[] = {"Ignore", "Note", "Remark", "Warning", "Error", "Fatal"};
     printf("%s(%d): %s\n", levelString[level], ++count, message);
     printf("    File: %s\n", filename);
     printf("    Line: %d\n\n", line);
     return 1;
 }
-
 
 struct Compiler : public Thread
 {
@@ -36,18 +35,21 @@ struct Compiler : public Thread
     #endif
     
     
-    Compiler() : Thread("Compiler Thread") {
-        
+    Compiler(bool insideExternal) : Thread("Compiler Thread") {
         
         if(!workingDir.isDirectory()) {
+    
+            auto* getPath = insideExternal ? wai_getModulePath : wai_getExecutablePath;
+            
             // Get directory of executable
-            int length, dirname_length;
-            length = wai_getExecutablePath(NULL, 0, &dirname_length);
+            int length, dirLength;
+            
+            length = getPath(NULL, 0, &dirLength);
             if (length == 0) return; // I sure hope this never happens...
             
             char* path = (char*)malloc(length + 1);
-            wai_getExecutablePath(path, length, &dirname_length);
-            path[dirname_length] = '\0';
+            getPath(path, length, &dirLength);
+            path[dirLength] = '\0';
             
             workingDir = File(path);
         }
@@ -57,19 +59,15 @@ struct Compiler : public Thread
             auto tree = ValueTree::fromXml(pathsFile.loadFileAsString());
             pyPath = tree.getProperty("python3").toString();
             cxxPath = tree.getProperty("cxx").toString();
-            
         }
         else {
-            
             // by default, just hope that they are in the $PATH variable
             setPaths("python3", "c++");
         }
-        
     }
     
     String currentPatch;
     String currentObjectID;
-    
     
     static void setPaths(String python, String cxx) {
         pyPath = python;
@@ -81,21 +79,69 @@ struct Compiler : public Thread
         
         auto pathsFile = workingDir.getChildFile("Paths.xml");
         pathsFile.replaceWithText(pathsTree.toXmlString());
+        
+        checkPaths();
+    }
+    
+    static void sendError(String error) {
+        MemoryOutputStream message;
+        message.writeString("All");
+        message.writeString("Error");
+        message.writeString(error);
+        
+        dynamic_cast<ChildProcessWorker*>(JUCEApplicationBase::getInstance())->sendMessageToCoordinator(message.getMemoryBlock());
+    }
+    
+    
+    static void checkPaths() {
+#if JUCE_MAC || JUCE_LINUX
+        int pyFound = system((pyPath + " --version").toRawUTF8()) == 0;
+        int cxxFound = system((cxxPath + " --version").toRawUTF8()) == 0;
+        
+        if(!cxxFound) {
+            sendError("Error: C++ compiler not found at: " + cxxPath);
+        }
+        if(!pyFound) {
+            sendError("Error: Python3 not found at: " + pyPath);
+            return;
+        }
+        
+        int hvccFound = system((pyPath + " -m pip list | grep hvcc").toRawUTF8()) == 0;
+        
+        if(!hvccFound) {
+            system((pyPath + "-m ensurepip").toRawUTF8());
+            system((pyPath + "-m pip install hvcc").toRawUTF8());
+        }
+        
+        
+#elif JUCE_WINDOWS
+        // ??
+#endif
     }
     
     void run() override
     {
-        auto saveFile = File::createTempFile(".pd");
+        auto libPath = generateLibrary(currentPatch);
         
-        FileOutputStream fstream(saveFile);
-        fstream.setNewLineString("\n");
-        fstream << currentPatch;
-        fstream.flush();
-
+        MemoryOutputStream message;
+        message.writeString(currentObjectID);
+        message.writeString("Load");
+        message.writeString(libPath);
+        dynamic_cast<ChildProcessWorker*>(JUCEApplicationBase::getInstance())->sendMessageToCoordinator(message.getMemoryBlock());
+    }
+    
+    String generateLibrary(String patchContent) {
         auto script = workingDir.getChildFile("run_hvcc.py");
         auto tmpDir = workingDir.getChildFile("tmp");
         tmpDir.createDirectory();
         
+        auto saveFile = tmpDir.getChildFile("temp_" + String::toHexString(Random::getSystemRandom().nextInt())).withFileExtension(".pd");
+        
+        FileOutputStream fstream(saveFile);
+        fstream.setNewLineString("\n");
+        fstream << patchContent;
+        fstream.flush();
+
         auto cxxCommand = cxxPath.isEmpty() ? "c++ " : (cxxPath + " ");
         auto pyCommand = pyPath.isEmpty() ? "python3 " : (pyPath + " ");
         auto hvccCommand = pyCommand + script.getFullPathName();
@@ -133,24 +179,19 @@ struct Compiler : public Thread
         File(tmpDir).getChildFile("ir").deleteRecursively();
         File(tmpDir).getChildFile("hv").deleteRecursively();
         
-        
-        MemoryOutputStream message;
-        message.writeString(currentObjectID);
-        message.writeString("Load");
-        message.writeString(libPath);
-        dynamic_cast<ChildProcessWorker*>(JUCEApplicationBase::getInstance())->sendMessageToCoordinator(message.getMemoryBlock());
+        return libPath;
     }
     
-    void compile(const String& patchContent, String ID) {
+    void compile(const String& patchContent, const String& ID) {
         if(isThreadRunning()) {
             std::cout << "Compile action already running!" << std::endl;
             return;
         }
         currentPatch = patchContent;
         currentObjectID = ID;
-        
         startThread(8);
     }
+    
     
 #if ENABLE_LIBCLANG
     void assemble(const String& code, const String& filename, const String& externalName) {

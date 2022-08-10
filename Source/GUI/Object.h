@@ -52,6 +52,7 @@ struct Object : public Label
             setType(getText());
         };
         
+        
         onEditorShow = [this](){
             auto* editor = getCurrentTextEditor();
             editor->onTextChange = [this, editor]() {
@@ -95,11 +96,11 @@ struct Object : public Label
         
         int oldNumInlets = numInlets;
         int oldNumOutlets = numOutlets;
+        auto info = ObjectInfo::getObjectInfo(StringArray::fromTokens(newType, true));
         
-        if(objectTypes.count(name)) {
-            auto spec = objectTypes.at(name);
-            numInlets = spec.first;
-            numOutlets = spec.second;
+        if(info != std::pair<int, int>(-1, -1)) {
+            numInlets = info.first;
+            numOutlets = info.second;
             validObject = true;
         }
         else {
@@ -116,6 +117,9 @@ struct Object : public Label
         setSize(std::max(getFont().getStringWidth(newType) + 6, 35), 20);
         resized();
         repaint();
+        
+        auto updateFn = parent->getProperties()["Update"];
+        parent->getProperties()["Update"].getNativeFunction()(var::NativeFunctionArgs(updateFn, nullptr, 0));
     }
     
     void resized() override {
@@ -130,14 +134,16 @@ struct Object : public Label
             if(iolet->isOutlet) {
                 bool singleOutlet = (numOutlets == 1) && (n_out == 0);
                 float x = singleOutlet ? 0.0f : static_cast<float>(n_out) / (numOutlets - 1);
-                x = std::clamp<float>(x * getWidth(), 0, getWidth() - width);
+                x = jmap<float>(x, 0, 1, 0, getWidth() - width);
+                
+                
                 iolet->setTopLeftPosition(x, getHeight() - 3);
                 n_out++;
             }
             else {
                 bool singleInlet = (numInlets == 1) && (n_in == 0);
                 float x = singleInlet ? 0.0f : static_cast<float>(n_in) / (numInlets - 1);
-                x = std::clamp<float>(x * getWidth(), 0, getWidth() - width);
+                x = jmap<float>(x, 0, 1, 0, getWidth() - width);
                 iolet->setTopLeftPosition(x, 0);
                 n_in++;
             }

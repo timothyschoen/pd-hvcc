@@ -43,16 +43,13 @@ public:
     //==============================================================================
     void initialise (const String& commandLine) override
     {
-        // For debugging
-        if(commandLine.isEmpty()) {
+        
+        bool initialised = initialiseFromCommandLine(commandLine, "test_id");
+        
+        if(!initialised) {
+            // For debugging
             createPatch("test", true);
         }
-        else {
-            initialiseFromCommandLine(commandLine, "test_id");
-        }
-        
-        
-        
     }
 
 

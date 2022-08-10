@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.2)
 
 project(hvcc VERSION 0.0.1 LANGUAGES C CXX)
 
+set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY true)
 set (CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include(${CMAKE_CURRENT_SOURCE_DIR}/Libraries/pd.build/pd.cmake)
@@ -16,7 +17,11 @@ endif()
 
 find_package (Python COMPONENTS Interpreter Development)
 
+
+# configure build system for external libraries
 add_subdirectory(Libraries/JUCE)
+
+
 set(pd_dir ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/pure-data/src)
 
 
@@ -126,7 +131,7 @@ set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/External/)
 add_pd_external(hvcc "hvcc~" Source/hvcc.c)
 target_sources(hvcc PUBLIC ${hvcc_interface} ${extra_sources})
 target_include_directories(hvcc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/JUCE/modules ${hvcc_interface_dir})
-target_link_libraries(hvcc PUBLIC juce::juce_core juce::juce_events) 
+target_link_libraries(hvcc PUBLIC juce::juce_core juce::juce_events juce::juce_data_structures) 
 
 target_link_libraries(hvcc_gui PUBLIC hvcc_binary_data juce::juce_core juce::juce_gui_basics juce::juce_graphics ${CLANG_LIBS})
 
@@ -157,12 +162,13 @@ set(INSTALL_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py
 )
 
-
 add_custom_target(install_external
-COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py ${PD_LIB_DIR}/run_hvcc.py
+COMMAND ${CMAKE_COMMAND} -E copy  ${PD_LIB_DIR}/run_hvcc.py
 COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc_gui> ${PD_LIB_DIR}/$<TARGET_FILE_NAME:hvcc_gui>
 COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc> ${PD_LIB_DIR}/$<TARGET_FILE_NAME:hvcc>
 )
+
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py $<TARGET_FILE:hvcc_gui> $<TARGET_FILE:hvcc> DESTINATION ${PD_LIB_DIR})
 
 
 if(UNIX)
