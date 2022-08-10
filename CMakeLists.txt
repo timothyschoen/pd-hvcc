@@ -164,7 +164,7 @@ set(INSTALL_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py
 )
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py $<TARGET_FILE:hvcc_gui> $<TARGET_FILE:hvcc> DESTINATION ${PD_LIB_DIR})
+install(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/Resources/run_hvcc.py $<TARGET_FILE:hvcc_gui> $<TARGET_FILE:hvcc> DESTINATION ${PD_LIB_DIR})
 
 
 if(UNIX)
