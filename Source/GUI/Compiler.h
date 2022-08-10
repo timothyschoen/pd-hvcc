@@ -110,8 +110,8 @@ struct Compiler : public Thread
         int hvccFound = system((pyPath + " -m pip list | grep hvcc").toRawUTF8()) == 0;
         
         if(!hvccFound) {
-            system((pyPath + "-m ensurepip").toRawUTF8());
-            system((pyPath + "-m pip install hvcc").toRawUTF8());
+            system((pyPath + " -m ensurepip").toRawUTF8());
+            system((pyPath + " -m pip install hvcc").toRawUTF8());
         }
         
         
