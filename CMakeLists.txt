@@ -147,7 +147,9 @@ set(PD_LIB_DIR "~/Documents/Pd/externals/hvcc~")
 
 # make a setup in the hvcc build dir for debugging
 add_custom_command(TARGET hvcc POST_BUILD
+    COMMAND bash -c "chmod +x $<TARGET_FILE:hvcc_gui>"
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:hvcc_gui> $<TARGET_FILE_DIR:hvcc>/$<TARGET_FILE_NAME:hvcc_gui>
+   
 )
 
 add_custom_command(TARGET hvcc POST_BUILD
