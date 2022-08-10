@@ -15,8 +15,6 @@ if(APPLE)
   set(CMAKE_OSX_ARCHITECTURES "arm64;" CACHE STRING "" FORCE)
 endif()
 
-find_package (Python COMPONENTS Interpreter Development)
-
 
 # configure build system for external libraries
 add_subdirectory(Libraries/JUCE EXCLUDE_FROM_ALL)

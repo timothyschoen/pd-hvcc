@@ -8,6 +8,19 @@ struct Message : public Object
 {
     Message(Component* parentComponent, String text, int x, int y) : Object(parentComponent, text, x, y)
     {
+        numInlets = 1;
+        numOutlets = 1;
+        
+        onEditorShow = [this](){
+            auto* editor = getCurrentTextEditor();
+            editor->onTextChange = [this, editor]() {
+                auto width = getFont().getStringWidth(editor->getText()) + 18;
+                
+                if (width > getWidth()) {
+                    setSize(width, getHeight());
+                }
+            };
+        };
     }
     
     void setType(const String& newType) override {

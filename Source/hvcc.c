@@ -76,7 +76,6 @@ void hvcc_save_state(void* obj, const char* content)
 {
     t_hvcc* x = (t_hvcc*)obj;
     x->x_state = strdup(content);
-    load_state(x, content);
 }
 
 static void get_filename(const char* path, char* filename) {
