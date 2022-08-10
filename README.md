@@ -19,7 +19,7 @@ After running, the pd external will be installed to ~/Documents/Pd/externals
 
 # Setup Instructions
 
-If you receive a message in the console that python3 or a c++ compiler wasn't found, open the settings dialog and point to the Python3 and C++ compiler you want to use.
+If you receive a message in the console that python3 or a c++ compiler wasn't found, open the settings dialog and point to the python3 and c++ compiler you want to use.
 
 I'll add instructions for installing these here soon!
 
@@ -28,5 +28,5 @@ I'll add instructions for installing these here soon!
 
 
 - Create "hvcc~" object
-- Send click on object to open, or use right-click -> open
+- Click on object to open, or use right-click -> open
 - Create a patch and hit compile!
