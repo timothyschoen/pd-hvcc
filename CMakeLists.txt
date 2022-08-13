@@ -8,11 +8,17 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include(${CMAKE_CURRENT_SOURCE_DIR}/Libraries/pd.build/pd.cmake)
 
 option(ENABLE_LIBCLANG OFF)
+set(JUCE_ENABLE_MODULE_SOURCE_GROUPS OFF CACHE BOOL "" FORCE)
+set_property(GLOBAL PROPERTY USE_FOLDERS YES)
 
 if(APPLE)
   set(CMAKE_XCODE_BUILD_SYSTEM "12" CACHE STRING "" FORCE)
-  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum OS X deployment version")
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X deployment version")
+  if(RUN_CLANG_TIDY)
   set(CMAKE_OSX_ARCHITECTURES "arm64;" CACHE STRING "" FORCE)
+  else()
+  set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
+  endif()
 endif()
 
 
@@ -49,28 +55,25 @@ file(GLOB hvcc_gui_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/Source/GUI/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Source/JIT/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Source/JIT/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Source/whereami.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Source/whereami.h
 )
 else()
 file(GLOB hvcc_gui_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/Source/GUI/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Source/GUI/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Source/whereami.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Source/whereami.h
 )
 endif()
+
 
 add_compile_definitions(JUCER_ENABLE_GPL_MODE=1 JUCE_DISPLAY_SPLASH_SCREEN=0) 
 
 target_compile_definitions(hvcc_gui PUBLIC JUCE_MODAL_LOOPS_PERMITTED=1 ENABLE_LIBCLANG=${ENABLE_LIBCLANG})
 target_include_directories(hvcc_gui PUBLIC "/Libraries/JUCE/modules" ${pd_dir} ${CMAKE_CURRENT_BINARY_DIR}/juce_binarydata_hvcc_binary_data/JuceLibraryCode/)
-target_sources(hvcc_gui PRIVATE ${hvcc_gui_sources})
-
 
 # HVCC External
 set(hvcc_interface_dir ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/hvcc_interface)
 file(GLOB hvcc_interface
+${CMAKE_CURRENT_SOURCE_DIR}/Source/Interface.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/Source/Interface.h
 ${hvcc_interface_dir}/HeavyContext.cpp
 ${hvcc_interface_dir}/HvControlBinop.c
 ${hvcc_interface_dir}/HvControlCast.c
@@ -109,11 +112,10 @@ ${hvcc_interface_dir}/HvTable.c
 ${hvcc_interface_dir}/HvUtils.c
 )
 
-file(GLOB extra_sources
-    ${CMAKE_CURRENT_SOURCE_DIR}/Source/Interface.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Source/Interface.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/Source/whereami.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Source/whereami.h
+file(GLOB utility_sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/Utility/whereami.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/Utility/whereami.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/Utility/concurrentqueue.h
 )
 
 file(GLOB hvcc_binary_sources
@@ -123,13 +125,19 @@ file(GLOB hvcc_binary_sources
 juce_add_binary_data(hvcc_binary_data SOURCES ${hvcc_binary_sources})
 set_target_properties(hvcc_binary_data PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
+target_sources(hvcc_gui PRIVATE ${hvcc_gui_sources} ${utility_sources})
+ 
 set_pd_sources(${pd_dir})
 set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/External/)
 
 add_pd_external(hvcc "hvcc~" Source/hvcc.c)
-target_sources(hvcc PUBLIC ${hvcc_interface} ${extra_sources})
+target_sources(hvcc PUBLIC ${hvcc_interface} ${utility_sources})
 target_include_directories(hvcc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/JUCE/modules ${hvcc_interface_dir})
 target_link_libraries(hvcc PUBLIC juce::juce_core juce::juce_events juce::juce_data_structures) 
+
+source_group("GUI Sources" FILES ${hvcc_gui_sources})
+source_group("Utility Sources" FILES $${utility_sources})
+source_group("External Sources" FILES Source/hvcc.c)
 
 target_link_libraries(hvcc_gui PUBLIC hvcc_binary_data juce::juce_core juce::juce_gui_basics juce::juce_graphics ${CLANG_LIBS})
 

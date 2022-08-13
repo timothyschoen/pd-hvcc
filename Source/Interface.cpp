@@ -3,7 +3,7 @@
 #include <juce_data_structures/juce_data_structures.h>
 
 #include <m_pd.h>
-#include "concurrentqueue.h"
+#include "Utility/concurrentqueue.h"
 
 using namespace juce;
 
