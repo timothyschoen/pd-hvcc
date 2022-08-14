@@ -220,17 +220,35 @@ struct Canvas : public Component, public LassoSource<Component*>, public Timer
     
     bool keyPressed(const KeyPress& key) override {
         if(key.getModifiers().isCommandDown()) {
+            // Cmd-1 for new text object
             if(key.getKeyCode() == 49) {
                 auto pos = getMouseXYRelative();
                 auto* obj = objects.add(new Object(this, "", pos.x, pos.y));
                 obj->showEditor();
                 return true;
             }
+            // Cmd-2 for new message object
             if(key.getKeyCode() == 50) {
                 auto pos = getMouseXYRelative();
                 auto* obj = objects.add(new hvcc::Message(this, "", pos.x, pos.y));
                 obj->showEditor();
                 return true;
+            }
+            
+            // Cmd-C to copy
+            if(key.getKeyCode() == 67) {
+            }
+            // Cmd-X to cut
+            if(key.getKeyCode() == 88) {
+            }
+            // Cmd-V to paste
+            if(key.getKeyCode() == 86) {
+            }
+            
+            // Cmd-Z to undo
+            if(key.getKeyCode() == 90) {
+            }
+            if(key.getKeyCode() == 90) {
             }
             
             return false;
