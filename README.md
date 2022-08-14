@@ -1,4 +1,4 @@
-# pd-hvccgen
+# pd-hvcc
 Creating a gen~-like environment for Pd, based on the Heavy compiler
 
 Currently still in development, it works but the editor is still unfinished.
@@ -37,6 +37,6 @@ brew install python3
 On Linux, use your package manager to install python3 and gcc (clang is also supported as a replacement for gcc).
 
 # Usage Instructions
-- Create "hvcc~" object
+- Create [hvcc~] object
 - Click on object to open, or use right-click -> open
 - Create a patch and hit compile!
